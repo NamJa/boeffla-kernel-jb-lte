@@ -361,6 +361,12 @@ if [ "get_tunables" == "$1" ]; then
 fi
 
 
+if [ "get_kernel_version" == "$1" ]; then
+	/sbin/busybox cat /proc/version
+	exit 0
+fi
+
+
 if [ "get_kernel_target" == "$1" ]; then
 	/sbin/busybox cat /res/bc/kernel_target
 	exit 0
