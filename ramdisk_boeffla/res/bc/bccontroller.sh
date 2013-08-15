@@ -550,7 +550,7 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/fast_scaling_sleep
 		# early demand
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/early_demand
-		echo "25" >/sys/devices/system/cpu/cpufreq/zzmoove/grad_up_threshold
+		echo "35" >/sys/devices/system/cpu/cpufreq/zzmoove/grad_up_threshold
 		# nice load
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/ignore_nice_load
 		# LCDFreq scaling
@@ -559,6 +559,16 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "50" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay
 		echo "20" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq
+		# Hotplug
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
 	fi
 
 	if [ "zzmoove - battery" == "$2" ]; then
@@ -602,6 +612,16 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay
 		echo "5" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq
+		# Hotplug
+		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "1200000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+		echo "600000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
+		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
+		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
 	fi
 
 	if [ "zzmoove - optimal" == "$2" ]; then
@@ -636,7 +656,7 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "2" >/sys/devices/system/cpu/cpufreq/zzmoove/fast_scaling_sleep
 		# early demand
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/early_demand
-		echo "25" >/sys/devices/system/cpu/cpufreq/zzmoove/grad_up_threshold
+		echo "35" >/sys/devices/system/cpu/cpufreq/zzmoove/grad_up_threshold
 		# nice load
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/ignore_nice_load
 		# LCDFreq scaling
@@ -645,6 +665,16 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay
 		echo "5" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq
+		# Hotplug
+		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "900000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+		echo "400000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
+		echo "600000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
+		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
 	fi
 
 	if [ "zzmoove - performance" == "$2" ]; then
@@ -679,7 +709,7 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "2" >/sys/devices/system/cpu/cpufreq/zzmoove/fast_scaling_sleep
 		# early demand
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/early_demand
-		echo "15" >/sys/devices/system/cpu/cpufreq/zzmoove/grad_up_threshold
+		echo "25" >/sys/devices/system/cpu/cpufreq/zzmoove/grad_up_threshold
 		# nice load
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/ignore_nice_load
 		# LCDFreq scaling
@@ -688,6 +718,16 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay
 		echo "5" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq
+		# Hotplug
+		echo "400000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+		echo "300000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
+		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
+		echo "900000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
 	fi
 
 	if [ "lulzactiveq - standard" == "$2" ]; then
