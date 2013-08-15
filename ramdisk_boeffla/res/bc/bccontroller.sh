@@ -373,6 +373,12 @@ if [ "get_kernel_target" == "$1" ]; then
 fi
 
 
+if [ "get_kernel_specs" == "$1" ]; then
+	/sbin/busybox cat /res/bc/kernel_specs
+	exit 0
+fi
+
+
 # *******************
 # Applying settings
 # *******************
