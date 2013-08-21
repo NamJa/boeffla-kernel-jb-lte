@@ -61,9 +61,11 @@ echo "=========================" >> $BOEFFLA_LOGFILE
 # Fix potential issues and clean up
 . /sbin/boeffla-fix-and-cleanup.inc
 
-# Custom boot animation support only for Samsung Kernel
+# Custom boot animation support only for Samsung Kernel,
+# boeffla sound change delay changed only for Samsung Kernel
 if [ "SAM" == "$KERNEL" ]; then
 	. /sbin/boeffla-bootanimation.inc
+	. /sbin/boeffla-sound-prepare.inc
 fi
 
 # Now wait for the rom to finish booting up
