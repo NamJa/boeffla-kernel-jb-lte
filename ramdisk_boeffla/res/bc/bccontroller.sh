@@ -569,9 +569,9 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
-		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
-		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
-		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
@@ -618,13 +618,20 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay
 		echo "5" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq
+		# Hotplug (reset freq thresholds)
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
 		# Hotplug
 		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
 		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
 		echo "1200000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
-		echo "600000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
-		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
-		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "600000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
@@ -671,13 +678,20 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay
 		echo "5" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq
+		# Hotplug (reset freq thresholds)
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
 		# Hotplug
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
 		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
 		echo "900000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
-		echo "400000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
-		echo "600000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
-		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "400000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "600000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
@@ -724,13 +738,20 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay
 		echo "5" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay
 		echo "500000" >/sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq
+		# Hotplug (reset freq thresholds)
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
 		# Hotplug
 		echo "400000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
 		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
 		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
-		echo "300000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
-		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
-		echo "900000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+		echo "300000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "900000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
@@ -1276,6 +1297,15 @@ if [ "action_debug_info_file" == "$1" ]; then
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1 >> $2
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2 >> $2
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3 >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2 >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3 >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2 >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3 >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold >> $2
+	cat /sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep >> $2
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug >> $2
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/hotplug_sleep >> $2
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/freq_step >> $2
