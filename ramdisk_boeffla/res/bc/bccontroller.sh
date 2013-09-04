@@ -16,7 +16,7 @@ fi
 # *******************
 
 if [ "lov_gov_profiles" == "$1" ]; then
-	echo "pegasusq - boeffla moderate;pegasusq - boeffla battery saving;pegasusq - boeffla 1 core;pegasusq - boeffla 2 cores;pegasusq - speedmod;zzmoove - optimal;zzmoove - battery;zzmoove - performance"
+	echo "pegasusq - boeffla moderate;pegasusq - boeffla battery saving;pegasusq - boeffla 1 core;pegasusq - boeffla 2 cores;pegasusq - speedmod;zzmoove - optimal;zzmoove - battery;zzmoove - battery yank;zzmoove - battery extreme yank;zzmoove - performance"
 	exit 0
 fi
 
@@ -579,7 +579,7 @@ if [ "apply_governor_profile" == "$1" ]; then
 
 	if [ "zzmoove - battery" == "$2" ]; then
 		# sampling rate and sampling down
-		echo "180000" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate
+		echo "100000" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate
 		echo "4" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate_sleep_multiplier
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_down_factor
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_down_max_momentum
@@ -755,6 +755,86 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_idle_threshold
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
+	fi
+
+	if [ "zzmoove - battery yank" == "$2" ]; then
+		# zzmoove governor settings optimized for battery:
+		echo "60000" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate
+		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_down_factor
+		echo "70" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold
+		echo "50" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/ignore_nice_load
+		echo "10" >/sys/devices/system/cpu/cpufreq/zzmoove/freq_step
+		echo "75" >/sys/devices/system/cpu/cpufreq/zzmoove/smooth_up
+
+		# hotplug up threshold per core
+		echo "90" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug1
+		echo "95" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug2
+		echo "98" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug3
+
+		echo "900000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "1100000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "1300000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+
+		# hotplug down threshold per core
+		echo "70" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
+		echo "80" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
+		echo "90" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+
+		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "900000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "1100000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
+
+		# hotplug block cycles
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
+
+		# Screen off settings
+		echo "4" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate_sleep_multiplier
+		echo "85" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_sleep
+		echo "75" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_sleep
+		echo "1" > /sys/devices/system/cpu/cpufreq/zzmoove/freq_step_sleep
+		echo "90" >/sys/devices/system/cpu/cpufreq/zzmoove/smooth_up_sleep
+		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_sleep
+	fi
+
+	if [ "zzmoove - battery extreme yank" == "$2" ]; then
+		# zzmoove governor settings optimized for battery:
+		echo "75000" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate
+		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_down_factor
+		echo "60" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold
+		echo "40" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/ignore_nice_load
+		echo "10" >/sys/devices/system/cpu/cpufreq/zzmoove/freq_step
+		echo "65" >/sys/devices/system/cpu/cpufreq/zzmoove/smooth_up
+
+		# hotplug up threshold per core
+		echo "85" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug1
+		echo "90" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug2
+		echo "98" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug3
+
+		echo "700000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq1
+		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq2
+		echo "1200000" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_hotplug_freq3
+
+		# hotplug down threshold per core
+		echo "65" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug1
+		echo "75" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug2
+		echo "85" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug3
+
+		echo "600000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq1
+		echo "800000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq2
+		echo "1000000" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_hotplug_freq3
+
+		# hotplug block cycles
+		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_block_cycles
+
+		# Screen off settings
+		echo "4" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate_sleep_multiplier
+		echo "85" >/sys/devices/system/cpu/cpufreq/zzmoove/up_threshold_sleep
+		echo "75" >/sys/devices/system/cpu/cpufreq/zzmoove/down_threshold_sleep
+		echo "1" > /sys/devices/system/cpu/cpufreq/zzmoove/freq_step_sleep
+		echo "90" >/sys/devices/system/cpu/cpufreq/zzmoove/smooth_up_sleep
+		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_sleep
 	fi
 
 	if [ "lulzactiveq - standard" == "$2" ]; then
