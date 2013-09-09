@@ -68,6 +68,26 @@ if [ "SAM" == "$KERNEL" ]; then
 	. /sbin/boeffla-sound-prepare.inc
 fi
 
+
+# Then set the options which change the stock kernel defaults
+# to Boeffla-Kernel defaults
+
+# Ext4 tweaks
+. /sbin/boeffla-ext4.inc
+
+# Sdcard buffer tweaks
+. /sbin/boeffla-sdcard.inc
+
+# AC and USB charging rate
+. /sbin/boeffla-chargingrate.inc
+
+# Android logger
+. /sbin/boeffla-androidlogger.inc
+
+# Kernel logger
+. /sbin/boeffla-kernellogger.inc
+
+
 # Now wait for the rom to finish booting up
 # (by checking for any android process)
 while ! /sbin/busybox pgrep android.process.acore ; do
@@ -103,20 +123,11 @@ echo $(date) Rom boot trigger detected, continuing after 8 more seconds... >> $B
 # MDNIE settings (sharpness fix)
 . /sbin/boeffla-mdnie.inc
 
-# AC and USB charging rate
-. /sbin/boeffla-chargingrate.inc
-
 # System tweaks
 . /sbin/boeffla-systemtweaks.inc
 
 # zRam support
 . /sbin/boeffla-zram.inc
-
-# Ext4 tweaks
-. /sbin/boeffla-ext4.inc
-
-# Sdcard buffer tweaks
-. /sbin/boeffla-sdcard.inc
 
 # Support for additional network protocols (CIFS, NFS)
 . /sbin/boeffla-network.inc
@@ -126,12 +137,6 @@ echo $(date) Rom boot trigger detected, continuing after 8 more seconds... >> $B
 
 # exFat support
 . /sbin/boeffla-exfat.inc
-
-# Android logger
-. /sbin/boeffla-androidlogger.inc
-
-# Kernel logger
-. /sbin/boeffla-kernellogger.inc
 
 # Turn off debugging for certain modules
 . /sbin/boeffla-disabledebugging.inc
