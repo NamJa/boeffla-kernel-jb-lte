@@ -1522,6 +1522,16 @@ if [ "extract_recovery" == "$1" ]; then
 	exit 0
 fi
 
+if [ "flash_modem" == "$1" ]; then
+	/sbin/busybox dd if=$2 of=/dev/block/mmcblk0p7
+	exit 0
+fi
+
+if [ "extract_modem" == "$1" ]; then
+	/sbin/busybox tar -xvf $2 -C $3
+	exit 0
+fi
+
 if [ "flash_cm_kernel" == "$1" ]; then
 	/sbin/busybox dd if=$2/boot.img of=/dev/block/mmcblk0p5
 	/sbin/busybox mount -o remount,rw -t ext4 /dev/block/mmcblk0p9 /system
