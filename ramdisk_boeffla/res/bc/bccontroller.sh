@@ -50,6 +50,11 @@ if [ "lov_system_tweaks" == "$1" ]; then
 	exit 0
 fi
 
+if [ "lov_modules" == "$1" ]; then
+	ls $LIBPATH/*
+	exit 0
+fi
+
 if [ "lov_presets" == "$1" ]; then
 	# Note, the ^ sign will be translated into newline for this setting
 	echo "Power extreme~"
