@@ -46,7 +46,7 @@ if [ "lov_eq_gain_profiles" == "$1" ]; then
 fi
 
 if [ "lov_system_tweaks" == "$1" ]; then
-	echo "Off;Boeffla tweaks;Speedmod tweaks"
+	echo "Off;Boeffla tweaks;Speedmod tweaks;Mattiadj tweaks"
 	exit 0
 fi
 
@@ -1001,6 +1001,17 @@ if [ "apply_system_tweaks" == "$1" ]; then
 		echo "2" > /proc/sys/net/ipv4/tcp_syn_retries
 		echo "2" > /proc/sys/net/ipv4/tcp_synack_retries
 		echo "10" > /proc/sys/net/ipv4/tcp_fin_timeout
+	fi
+
+	if [ "Mattiadj tweaks" == "$2" ]; then
+		echo "10" > /proc/sys/vm/dirty_background_ratio
+		echo "500" > /proc/sys/vm/dirty_expire_centisecs
+		echo "10" > /proc/sys/vm/dirty_ratio
+		echo "100" > /proc/sys/vm/dirty_writeback_centisecs
+		echo "8192" > /proc/sys/vm/min_free_kbytes
+		echo "1" > /proc/sys/vm/page-cluster
+		echo "70" > /proc/sys/vm/swappiness
+		echo "500" > /proc/sys/vm/vfs_cache_pressure
 	fi
 	exit 0
 fi
