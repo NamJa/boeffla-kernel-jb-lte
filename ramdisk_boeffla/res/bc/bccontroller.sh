@@ -751,7 +751,7 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "0" >/sys/devices/system/cpu/cpufreq/zzmoove/disable_hotplug_sleep
 	fi
 
-	if [ "zzmoove - battery yank" == "$2" ]; then
+	if [ "zzmoove - battery extreme yank" == "$2" ]; then
 		# zzmoove governor settings optimized for battery:
 		echo "60000" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_down_factor
@@ -791,7 +791,7 @@ if [ "apply_governor_profile" == "$1" ]; then
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/hotplug_sleep
 	fi
 
-	if [ "zzmoove - battery extreme yank" == "$2" ]; then
+	if [ "zzmoove - battery yank" == "$2" ]; then
 		# zzmoove governor settings optimized for battery:
 		echo "75000" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_rate
 		echo "1" >/sys/devices/system/cpu/cpufreq/zzmoove/sampling_down_factor
@@ -1498,6 +1498,16 @@ fi
 
 if [ "flash_kernel" == "$1" ]; then
 	/sbin/busybox dd if=$2 of=/dev/block/mmcblk0p5
+	exit 0
+fi
+
+if [ "archive_kernel" == "$1" ]; then
+	/sbin/busybox rm $3.tar
+	/sbin/busybox rm $3.tar.md5
+	/sbin/busybox tar cvf $3.tar $2
+	/sbin/busybox md5sum $3.tar >> $3.tar
+	/sbin/busybox mv $3.tar $3.tar.md5
+	/sbin/busybox rm $2
 	exit 0
 fi
 
