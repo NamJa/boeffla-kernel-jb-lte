@@ -1097,6 +1097,17 @@ if [ "apply_exfat" == "$1" ]; then
 	exit 0
 fi
 
+if [ "apply_ntfs" == "$1" ]; then
+	if [ "1" == "$2" ]; then
+		insmod $LIBPATH/ntfs.ko
+	fi
+
+	if [ "0" == "$2" ]; then
+		rmmod $LIBPATH/ntfs.ko
+	fi
+	exit 0
+fi
+
 if [ "apply_ums" == "$1" ]; then
 	if [ "1" == "$2" ]; then
 		/sbin/busybox umount -l /mnt/extSdCard/
