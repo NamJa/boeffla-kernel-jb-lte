@@ -327,9 +327,11 @@ fi
 
 if [ "param_charge_rates" == "$1" ]; then
 	# AC charge min/max/steps
-	echo "600;1500;25;"
+	echo "100;1600;25;"
 	# USB charge min/max/steps
-	echo "0;1200;25"
+	echo "0;1600;25;"
+	# Wireless charge min/max/steps
+	echo "100;1000;25"
 	exit 0
 fi
 
@@ -1294,9 +1296,14 @@ if [ "action_debug_info_file" == "$1" ]; then
 	echo -e "\n**** Early suspend:\n" >> $2
 	cat /sys/kernel/early_suspend/early_suspend_delay >> $2
 
-	echo -e "\n**** Charging levels (ac/usb):\n" >> $2
+	echo -e "\n**** Charging levels (ac/usb/wireless):\n" >> $2
 	cat /sys/kernel/charge_levels/charge_level_ac >> $2
 	cat /sys/kernel/charge_levels/charge_level_usb >> $2
+	cat /sys/kernel/charge_levels/charge_level_wireless >> $2
+
+	echo -e "\n**** Charging instable power / ignore safety margin:\n" >> $2
+	cat /sys/kernel/charge_levels/ignore_unstable_power >> $2
+	cat /sys/kernel/charge_levels/ignore_safety_margin >> $2
 
 	echo -e "\n**** Governor:\n" >> $2
 	cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor >> $2
@@ -1423,6 +1430,50 @@ if [ "action_debug_info_file" == "$1" ]; then
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_up_delay >> $2
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_down_delay >> $2
 	cat /sys/devices/system/cpu/cpufreq/zzmoove/lcdfreq_kick_in_freq >> $2
+
+	echo -e "\n**** lulzactiveq tuneables\n" >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/cpu_down_rate >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/cpu_up_rate >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/debug_mode >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/dec_cpu_load >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/down_sample_time >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/dvfs_debug >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/freq_table >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hispeed_freq >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_freq_1_1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_freq_2_0 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_freq_2_1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_freq_3_0 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_freq_3_1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_freq_4_0 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_lock >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_rq_1_1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_rq_2_0 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_rq_2_1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_rq_3_0 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_rq_3_1 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_rq_4_0 >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/hotplug_sampling_rate >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/ignore_nice_load >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/inc_cpu_load >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/max_cpu_lock >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/min_cpu_lock >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/pump_down_step >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/pump_up_step >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/screen_off_min_step >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/up_nr_cpus >> $2
+	cat /sys/devices/system/cpu/cpufreq/lulzactiveq/up_sample_time >> $2
+
+	echo -e "\n**** ondemand tuneables\n" >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/down_differential >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/freq_step >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/ignore_nice_load >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/io_is_busy >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/powersave_bias >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_down_factor >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/sampling_rate_min >> $2
+	cat /sys/devices/system/cpu/cpufreq/ondemand/up_threshold >> $2
 
 	echo -e "\n============================================\n" >> $2
 
