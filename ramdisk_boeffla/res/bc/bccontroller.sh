@@ -347,7 +347,7 @@ fi
 # *******************
 
 if [ "get_ums" == "$1" ]; then
-	if [ "`/sbin/busybox grep 179 /sys/devices/platform/s3c-usbgadget/gadget/lun0/file`" ]; then
+	if [ "`busybox grep 179 /sys/devices/platform/s3c-usbgadget/gadget/lun0/file`" ]; then
 		echo "1"
 	else
 		echo "0"
@@ -361,21 +361,21 @@ if [ "get_tunables" == "$1" ]; then
 		cd /sys/devices/system/cpu/cpufreq/$2
 		for file in *
 		do
-			content="`/sbin/busybox cat $file`"
-			/sbin/busybox echo -ne "$file~$content;"
+			content="`busybox cat $file`"
+			busybox echo -ne "$file~$content;"
 		done
 	fi
 fi
 
 
 if [ "get_kernel_version" == "$1" ]; then
-	/sbin/busybox cat /proc/version
+	busybox cat /proc/version
 	exit 0
 fi
 
 
 if [ "get_kernel_specs" == "$1" ]; then
-	/sbin/busybox cat /res/bc/kernel_specs
+	busybox cat /res/bc/kernel_specs
 	exit 0
 fi
 
@@ -1029,34 +1029,34 @@ fi
 
 if [ "apply_ext4_tweaks" == "$1" ]; then
 	if [ "1" == "$2" ]; then
-		/sbin/busybox sync
-		/sbin/busybox mount -o remount,commit=20,noatime /dev/block/mmcblk0p8 /cache
-		/sbin/busybox sync
-		/sbin/busybox mount -o remount,commit=20,noatime /dev/block/mmcblk0p12 /data
-		/sbin/busybox sync
+		busybox sync
+		busybox mount -o remount,commit=20,noatime /dev/block/mmcblk0p8 /cache
+		busybox sync
+		busybox mount -o remount,commit=20,noatime /dev/block/mmcblk0p12 /data
+		busybox sync
 	fi
 
 	if [ "0" == "$2" ]; then
-		/sbin/busybox sync
-		/sbin/busybox mount -o remount,commit=0,noatime /dev/block/mmcblk0p8 /cache
-		/sbin/busybox sync
-		/sbin/busybox mount -o remount,commit=0,noatime /dev/block/mmcblk0p12 /data
-		/sbin/busybox sync
+		busybox sync
+		busybox mount -o remount,commit=0,noatime /dev/block/mmcblk0p8 /cache
+		busybox sync
+		busybox mount -o remount,commit=0,noatime /dev/block/mmcblk0p12 /data
+		busybox sync
 	fi
 	exit 0
 fi
 
 if [ "apply_zram" == "$1" ]; then
 	if [ "1" == "$2" ]; then
-		/sbin/busybox swapoff /dev/block/zram0
+		busybox swapoff /dev/block/zram0
 		echo "1" > /sys/block/zram0/reset
 		echo "1" > /sys/block/zram0/initstate
-		/sbin/busybox swapon /dev/block/zram0
+		busybox swapon /dev/block/zram0
 		echo "70" > /proc/sys/vm/swappiness
 	fi
 
 	if [ "0" == "$2" ]; then
-		/sbin/busybox swapoff /dev/block/zram0
+		busybox swapoff /dev/block/zram0
 		echo "1" > /sys/block/zram0/reset
 		echo "0" > /sys/block/zram0/initstate
 	fi
@@ -1128,7 +1128,7 @@ fi
 
 if [ "apply_ums" == "$1" ]; then
 	if [ "1" == "$2" ]; then
-		/sbin/busybox umount -l /mnt/extSdCard/
+		busybox umount -l /mnt/extSdCard/
 		/system/bin/setprop persist.sys.usb.config mass_storage,adb
 		echo /dev/block/vold/179:49 > /sys/devices/platform/s3c-usbgadget/gadget/lun0/file
 	fi
@@ -1154,7 +1154,7 @@ if [ "action_debug_info_file" == "$1" ]; then
 	cat /proc/version >> $2
 
 	echo -e "\n**** Firmware information\n" >> $2
-	/sbin/busybox grep ro.build.version /system/build.prop >> $2
+	busybox grep ro.build.version /system/build.prop >> $2
 
 	echo -e "\n============================================\n" >> $2
 
@@ -1270,8 +1270,8 @@ if [ "action_debug_info_file" == "$1" ]; then
 	ls /system/app/Superuser.apk >> $2
 
 	echo -e "\n**** Mounts:\n" >> $2
-	mount | /sbin/busybox grep /data >> $2
-	mount | /sbin/busybox grep /cache >> $2
+	mount | busybox grep /data >> $2
+	mount | busybox grep /cache >> $2
 
 	echo -e "\n**** SD Card read ahead:\n" >> $2
 	cat /sys/block/mmcblk0/bdi/read_ahead_kb >> $2
@@ -1349,7 +1349,7 @@ if [ "action_debug_info_file" == "$1" ]; then
 	cat /sys/devices/system/cpu/cpu0/cpufreq/stats/time_in_state >> $2
 
 	echo -e "\n**** Memory:\n" >> $2
-	/sbin/busybox free -m >> $2
+	busybox free -m >> $2
 
 	echo -e "\n**** Meminfo:\n" >> $2
 	cat /proc/meminfo >> $2
@@ -1364,10 +1364,10 @@ if [ "action_debug_info_file" == "$1" ]; then
 	cat /proc/sys/vm/swappiness >> $2
 
 	echo -e "\n**** Storage:\n" >> $2
-	/sbin/busybox df >> $2
+	busybox df >> $2
 
 	echo -e "\n**** Mounts:\n" >> $2
-	/sbin/busybox mount >> $2
+	busybox mount >> $2
 
 	echo -e "\n**** pegasusq tuneables\n" >> $2
 	cat /sys/devices/system/cpu/cpufreq/pegasusq/hotplug_freq_1_1 >> $2
@@ -1510,52 +1510,52 @@ if [ "action_debug_info_file" == "$1" ]; then
 fi
 
 if [ "action_reboot" == "$1" ]; then
-	/sbin/busybox sync
-	/sbin/busybox sleep 1s
+	busybox sync
+	busybox sleep 1s
 	/system/bin/reboot
 	exit 0
 fi
 
 if [ "action_reboot_cwm" == "$1" ]; then
-	/sbin/busybox sync
-	/sbin/busybox sleep 1s
+	busybox sync
+	busybox sleep 1s
 	/system/bin/reboot recovery
 	exit 0
 fi
 
 if [ "action_reboot_download" == "$1" ]; then
-	/sbin/busybox sync
-	/sbin/busybox sleep 1s
+	busybox sync
+	busybox sleep 1s
 	/system/bin/reboot download
 	exit 0
 fi
 
 if [ "action_wipe_caches_reboot" == "$1" ]; then
-	/sbin/busybox rm -rf /cache/*
-	/sbin/busybox rm -rf /data/dalvik-cache/*
-	/sbin/busybox sync
-	/sbin/busybox sleep 1s
+	busybox rm -rf /cache/*
+	busybox rm -rf /data/dalvik-cache/*
+	busybox sync
+	busybox sleep 1s
 	/system/bin/reboot
 	exit 0
 fi
 
 if [ "action_wipe_clipboard_cache" == "$1" ]; then
-	/sbin/busybox rm -rf /data/clipboard/*
-	/sbin/busybox sync
+	busybox rm -rf /data/clipboard/*
+	busybox sync
 	exit 0
 fi
 
 if [ "action_clean_initd" == "$1" ]; then
-	/sbin/busybox tar cvz -f $2 /system/etc/init.d
-	/sbin/busybox mount -o remount,rw -t ext4 /dev/block/mmcblk0p9 /system
-	/sbin/busybox rm /system/etc/init.d/*
-	/sbin/busybox mount -o remount,ro -t ext4 /dev/block/mmcblk0p9 /system
+	busybox tar cvz -f $2 /system/etc/init.d
+	busybox mount -o remount,rw -t ext4 /dev/block/mmcblk0p9 /system
+	busybox rm /system/etc/init.d/*
+	busybox mount -o remount,ro -t ext4 /dev/block/mmcblk0p9 /system
 	exit 0
 fi
 
 if [ "action_fix_permissions" == "$1" ]; then
-	/sbin/busybox sh /res/bc/fix_permissions
-	/sbin/busybox sync
+	busybox sh /res/bc/fix_permissions
+	busybox sync
 	exit 0
 fi
 
@@ -1569,62 +1569,62 @@ if [ "action_fstrim" == "$1" ]; then
 	echo -e "Trim /system"
 	/res/bc/fstrim -v /system
 	echo -e ""
-	/sbin/busybox sync
+	busybox sync
 	exit 0
 fi
 
 
 if [ "flash_kernel" == "$1" ]; then
-	/sbin/busybox dd if=$2 of=/dev/block/mmcblk0p5
+	busybox dd if=$2 of=/dev/block/mmcblk0p5
 	exit 0
 fi
 
 if [ "archive_kernel" == "$1" ]; then
-	/sbin/busybox rm $3.tar
-	/sbin/busybox rm $3.tar.md5
-	/sbin/busybox tar cvf $3.tar $2
-	/sbin/busybox md5sum $3.tar >> $3.tar
-	/sbin/busybox mv $3.tar $3.tar.md5
-	/sbin/busybox rm $2
+	busybox rm $3.tar
+	busybox rm $3.tar.md5
+	busybox tar cvf $3.tar $2
+	busybox md5sum $3.tar >> $3.tar
+	busybox mv $3.tar $3.tar.md5
+	busybox rm $2
 	exit 0
 fi
 
 if [ "extract_kernel" == "$1" ]; then
-	/sbin/busybox tar -xvf $2 -C $3
+	busybox tar -xvf $2 -C $3
 	exit 0
 fi
 
 if [ "flash_recovery" == "$1" ]; then
-	/sbin/busybox dd if=$2 of=/dev/block/mmcblk0p6
+	busybox dd if=$2 of=/dev/block/mmcblk0p6
 	exit 0
 fi
 
 if [ "extract_recovery" == "$1" ]; then
-	/sbin/busybox tar -xvf $2 -C $3
+	busybox tar -xvf $2 -C $3
 	exit 0
 fi
 
 if [ "flash_modem" == "$1" ]; then
-	/sbin/busybox dd if=$2 of=/dev/block/mmcblk0p7
+	busybox dd if=$2 of=/dev/block/mmcblk0p7
 	exit 0
 fi
 
 if [ "extract_modem" == "$1" ]; then
-	/sbin/busybox tar -xvf $2 -C $3
+	busybox tar -xvf $2 -C $3
 	exit 0
 fi
 
 if [ "flash_cm_kernel" == "$1" ]; then
-	/sbin/busybox dd if=$2/boot.img of=/dev/block/mmcblk0p5
-	/sbin/busybox mount -o remount,rw -t ext4 /dev/block/mmcblk0p9 /system
-	/sbin/busybox rm -f /system/lib/modules/*
-	/sbin/busybox cp $2/system/lib/modules/* /system/lib/modules
-	/sbin/busybox chmod 644 /system/lib/modules/*
-	/sbin/busybox mount -o remount,ro -t ext4 /dev/block/mmcblk0p9 /system
+	busybox dd if=$2/boot.img of=/dev/block/mmcblk0p5
+	busybox mount -o remount,rw -t ext4 /dev/block/mmcblk0p9 /system
+	busybox rm -f /system/lib/modules/*
+	busybox cp $2/system/lib/modules/* /system/lib/modules
+	busybox chmod 644 /system/lib/modules/*
+	busybox mount -o remount,ro -t ext4 /dev/block/mmcblk0p9 /system
 	exit 0
 fi
 
 if [ "extract_cm_kernel" == "$1" ]; then
-	/sbin/busybox unzip $2 -d $3
+	busybox unzip $2 -d $3
 	exit 0
 fi
