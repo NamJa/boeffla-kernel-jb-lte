@@ -1,0 +1,7 @@
+ui_print("Flashing Boeffla-Kernel 3.1 Stable for SGS3 LTE");
+ui_print("                Port, rebuilt by GUNi");
+assert(package_extract_file("boot.img", "/tmp/boot.img"),
+       write_raw_image("/tmp/boot.img", "/dev/block/mmcblk0p5"),
+       delete("/tmp/boot.img"));
+ui_print(" ");
+ui_print("Finished, please reboot.");
