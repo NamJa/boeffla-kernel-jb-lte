@@ -275,6 +275,31 @@ static int battery_get_vf(struct battery_info *info)
 	case VF_DET_GPIO:
 		present = !gpio_get_value(info->batdet_gpio);
 		break;
+		case VF_DET_ADC_GPIO:
+#if defined(CONFIG_S3C_ADC)
+	    adc = s3c_adc_read(info->adc_client, info->pdata->vf_det_ch);
+#else
+	    adc = 350;      /* temporary value */
+#endif
+	    info->battery_vf_adc = adc;
+
+	    if (info->cable_type != POWER_SUPPLY_TYPE_BATTERY) {
+		 	   present = INRANGE(adc, info->pdata->vf_det_th_l,
+					   info->pdata->vf_det_th_h);
+	    } else {
+			   pr_debug("%s: no charger -> LDO disable(adc=%d)\n",
+					   __func__, info->battery_vf_adc);
+			   present = 1;
+	    }
+
+	    present &= !gpio_get_value(info->batdet_gpio);
+
+	    if (!present)
+			   pr_info("%s: adc(%d), out of range(%d ~ %d)\n",
+									   __func__, adc,
+									   info->pdata->vf_det_th_l,
+									   info->pdata->vf_det_th_h);
+	    break;
 	default:
 		pr_err("%s: not support src(%d)\n", __func__,
 					info->pdata->vf_det_src);
@@ -1477,6 +1502,29 @@ static void battery_monitor_work(struct work_struct *work)
 	info->cable_type = battery_get_cable(info);
 #endif
 
+	/* adc ldo , vf irq control */
+	if ((info->pdata->vf_det_src == VF_DET_GPIO) ||
+		   (info->pdata->vf_det_src == VF_DET_ADC_GPIO)) {
+		   info->cable_type = battery_get_cable(info);
+
+		   if (info->cable_type == POWER_SUPPLY_TYPE_BATTERY) {
+				   if (info->batdet_irq_st) {
+						   disable_irq(info->batdet_irq);
+						   info->batdet_irq_st = false;
+				   }
+				   if (info->adc_pwr_st)
+						   battery_set_adc_power(info, 0);
+		   } else {
+				   if (!info->adc_pwr_st)
+						   battery_set_adc_power(info, 1);
+				   if (!info->batdet_irq_st) {
+						   enable_irq(info->batdet_irq);
+						   info->batdet_irq_st = true;
+				   }
+		   }
+	}
+
+
 	/* If battery is not connected, clear flag for charge scenario */
 	if ((battery_vf_cond(info) == true) ||
 		(battery_health_cond(info) == true)) {
@@ -1505,25 +1553,6 @@ static void battery_monitor_work(struct work_struct *work)
 
 	/* Check battery state from charger and fuelgauge */
 	battery_update_info(info);
-
-	/* adc ldo , vf irq control */
-	if (info->pdata->vf_det_src == VF_DET_GPIO) {
-		if (info->cable_type == POWER_SUPPLY_TYPE_BATTERY) {
-			if (info->batdet_irq_st) {
-				disable_irq(info->batdet_irq);
-				info->batdet_irq_st = false;
-			}
-			if (info->adc_pwr_st)
-				battery_set_adc_power(info, 0);
-		} else {
-			if (!info->adc_pwr_st)
-				battery_set_adc_power(info, 1);
-			if (!info->batdet_irq_st) {
-				enable_irq(info->batdet_irq);
-				info->batdet_irq_st = true;
-			}
-		}
-	}
 
 	/* if battery is missed state, do not check charge scenario */
 	if (info->battery_present == 0)

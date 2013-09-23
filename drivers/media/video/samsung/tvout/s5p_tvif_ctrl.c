@@ -2370,7 +2370,7 @@ static void s5p_hdmi_ctrl_internal_stop(void)
 #endif
 	if (ctrl->hdcp_en) {
 		s5p_hdcp_stop();
-		s5p_hdcp_flush_work();
+		//s5p_hdcp_flush_work();
 	}
 
 	s5p_hdmi_reg_enable(false);

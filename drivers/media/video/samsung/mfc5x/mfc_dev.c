@@ -213,8 +213,9 @@ static int mfc_open(struct inode *inode, struct file *file)
 
 	mutex_lock(&mfcdev->lock);
 
-#if defined(CONFIG_USE_MFC_CMA) && defined(CONFIG_MACH_M0)
+#ifdef CONFIG_USE_MFC_CMA
 	if (atomic_read(&mfcdev->inst_cnt) == 0) {
+#if defined(CONFIG_MACH_M0) || defined(CONFIG_MACH_GC1)
 		size_t size = 0x02800000;
 		mfcdev->cma_vaddr = dma_alloc_coherent(mfcdev->device, size,
 						&mfcdev->cma_dma_addr, 0);
@@ -228,6 +229,7 @@ static int mfc_open(struct inode *inode, struct file *file)
 					 __func__, __LINE__, (int)size,
 						(int)mfcdev->cma_vaddr,
 						(int)mfcdev->cma_dma_addr);
+#endif
 	}
 #endif
 
@@ -413,6 +415,17 @@ err_inst_cnt:
 #endif
 err_start_hw:
 	if (atomic_read(&mfcdev->inst_cnt) == 0) {
+#ifdef CONFIG_USE_MFC_CMA
+#if defined(CONFIG_MACH_M0) || defined(CONFIG_MACH_GC1)
+		size_t size = 0x02800000;
+		dma_free_coherent(mfcdev->device, size, mfcdev->cma_vaddr,
+							mfcdev->cma_dma_addr);
+		printk(KERN_INFO "%s[%d] size 0x%x, vaddr 0x%x, base 0x0%x\n",
+				__func__, __LINE__, (int)size,
+				(int) mfcdev->cma_vaddr,
+				(int)mfcdev->cma_dma_addr);
+#endif
+#endif
 		if (mfc_power_off() < 0)
 			mfc_err("power disable failed\n");
 	}
@@ -565,8 +578,9 @@ static int mfc_release(struct inode *inode, struct file *file)
 
 err_pwr_disable:
 
-#if defined(CONFIG_USE_MFC_CMA) && defined(CONFIG_MACH_M0)
+#ifdef CONFIG_USE_MFC_CMA
 	if (atomic_read(&mfcdev->inst_cnt) == 0) {
+#if defined(CONFIG_MACH_M0) || defined(CONFIG_MACH_GC1)
 		size_t size = 0x02800000;
 		dma_free_coherent(mfcdev->device, size, mfcdev->cma_vaddr,
 					mfcdev->cma_dma_addr);
@@ -574,6 +588,7 @@ err_pwr_disable:
 				__func__, __LINE__, (int)size,
 				(int) mfcdev->cma_vaddr,
 				(int)mfcdev->cma_dma_addr);
+#endif
 	}
 #endif
 	mutex_unlock(&dev->lock);
@@ -1325,30 +1340,9 @@ static int mfc_mmap(struct file *file, struct vm_area_struct *vma)
 	return 0;
 }
 
-#ifdef CONFIG_USE_MFC_CMA
-/* FIXME: workaround for CMA migration fail due to page lock */
-static int mfc_open_with_retry(struct inode *inode, struct file *file)
-{
-	int ret;
-	int i = 0;
-
-	ret = mfc_open(inode, file);
-
-	while (ret == -ENOMEM && i++ < 3) {
-		msleep(1000);
-		ret = mfc_open(inode, file);
-	}
-
-	return ret;
-}
-#define MFC_OPEN mfc_open_with_retry
-#else
-#define MFC_OPEN mfc_open
-#endif
-
 static const struct file_operations mfc_fops = {
 	.owner		= THIS_MODULE,
-	.open		= MFC_OPEN,
+	.open		= mfc_open,
 	.release	= mfc_release,
 	.unlocked_ioctl	= mfc_ioctl,
 	.mmap		= mfc_mmap,

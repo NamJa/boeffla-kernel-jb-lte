@@ -332,7 +332,7 @@ static int mdm6600_on(struct modem_ctl *mc)
 		return -ENXIO;
 	}
 
-	gpio_set_value(mc->gpio_pda_active, 0);
+	gpio_set_value(mc->gpio_pda_active, 1);
 
 	gpio_set_value(mc->gpio_cp_on, 1);
 	msleep(500);
@@ -345,8 +345,6 @@ static int mdm6600_on(struct modem_ctl *mc)
 
 	gpio_set_value(mc->gpio_cp_on, 0);
 	msleep(500);
-
-	gpio_set_value(mc->gpio_pda_active, 1);
 
 #if defined(CONFIG_LINK_DEVICE_PLD)
 	gpio_set_value(mc->gpio_fpga_cs_n, 1);
@@ -420,8 +418,12 @@ static int mdm6600_reset(struct modem_ctl *mc)
 static int mdm6600_boot_on(struct modem_ctl *mc)
 {
 	struct regulator *regulator;
+	struct link_device *ld = get_current_link(mc->iod);
+	struct dpram_link_device *dpld = to_dpram_link_device(ld);
 
 	pr_info("[MSM] <%s>\n", __func__);
+
+	dpld->recv_intr(dpld);
 
 	if (!mc->gpio_flm_uart_sel) {
 		pr_err("[MSM] no gpio data\n");
@@ -657,10 +659,7 @@ static irqreturn_t phone_active_irq_handler(int irq, void *arg)
 			mc->iod->modem_state_changed(mc->iod, phone_state);
 	} else if (phone_reset && !phone_active) {
 		if (mc->phone_state == STATE_ONLINE) {
-			if (cp_dump_int)
 				phone_state = STATE_CRASH_EXIT;
-			else
-				phone_state = STATE_CRASH_RESET;
 			if (mc->iod && mc->iod->modem_state_changed)
 				mc->iod->modem_state_changed(mc->iod,
 							     phone_state);

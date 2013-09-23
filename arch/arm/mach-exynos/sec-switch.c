@@ -340,6 +340,9 @@ void max77693_muic_usb_cb(u8 usb_mode)
 #ifdef CONFIG_USB_OHCI_S5P
 		pm_runtime_get_sync(&s5p_device_ohci.dev);
 #endif
+#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+		host_noti_pdata->is_host_working = 1;
+#endif
 	} else if (usb_mode == USB_OTGHOST_DETACHED
 		|| usb_mode == USB_POWERED_HOST_DETACHED) {
 #ifdef CONFIG_USB_OHCI_S5P
@@ -357,6 +360,9 @@ void max77693_muic_usb_cb(u8 usb_mode)
 		}
 		else
 			host_noti_pdata->powered_booster(0);
+#endif
+#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+		host_noti_pdata->is_host_working = 0;
 #endif
 	}
 
@@ -614,9 +620,19 @@ static void otg_accessory_power(int enable)
 	/* max77693 otg power control */
 	otg_control(enable);
 
-	gpio_request(GPIO_OTG_EN, "USB_OTG_EN");
-	gpio_direction_output(GPIO_OTG_EN, on);
-	gpio_free(GPIO_OTG_EN);
+#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+	if (fake_shut_down) {
+		gpio_request(GPIO_OTG_EN, "USB_OTG_EN");
+		gpio_direction_output(GPIO_OTG_EN, 0);
+		gpio_free(GPIO_OTG_EN);
+	} else {
+#endif
+		gpio_request(GPIO_OTG_EN, "USB_OTG_EN");
+		gpio_direction_output(GPIO_OTG_EN, on);
+		gpio_free(GPIO_OTG_EN);
+#if defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_FAST_BOOT)
+	}
+#endif
 	pr_info("%s: otg accessory power = %d\n", __func__, on);
 }
 

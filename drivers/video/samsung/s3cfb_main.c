@@ -937,6 +937,12 @@ void s3cfb_early_suspend(struct early_suspend *h)
 	return ;
 }
 
+// jk45.kim: To up TSP init speed.
+#if defined(CONFIG_TARGET_LOCALE_KOR)
+extern int melfas_power(int on);
+#endif
+// jk45.kim
+
 void s3cfb_late_resume(struct early_suspend *h)
 {
 	struct s3cfb_global *info = container_of(h, struct s3cfb_global, early_suspend);
@@ -956,6 +962,12 @@ void s3cfb_late_resume(struct early_suspend *h)
 	dev_dbg(info->dev, "s3cfb - enable power domain\n");
 	pm_runtime_get_sync(&pdev->dev);
 #endif
+
+// jk45.kim: To up TSP init speed.
+#if defined(CONFIG_TARGET_LOCALE_KOR)
+	melfas_power(1);
+#endif
+// jk45.kim
 
 #ifdef CONFIG_FB_S5P_MIPI_DSIM
 	s5p_dsim_late_resume();
@@ -1001,7 +1013,6 @@ void s3cfb_late_resume(struct early_suspend *h)
 		s5c1372_ldi_enable();
 #endif
 		s3c_mdnie_init_global(fbdev[i]);
-		set_mdnie_value(g_mdnie, 1);
 		s3c_mdnie_display_on(fbdev[i]);
 #endif
 		s3cfb_display_on(fbdev[i]);

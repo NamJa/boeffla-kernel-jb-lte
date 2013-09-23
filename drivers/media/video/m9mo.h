@@ -107,6 +107,7 @@ enum m9mo_prev_frmsize {
 	M9MO_PREVIEW_720P_DUAL,
 	M9MO_PREVIEW_VGA_DUAL,
 	M9MO_PREVIEW_QVGA_DUAL,
+	M9MO_PREVIEW_1440_1080,
 };
 
 enum m9mo_cap_frmsize {
@@ -239,12 +240,14 @@ struct m9mo_state {
 	enum v4l2_flash_mode flash_mode;
 	enum v4l2_scene_mode scene_mode;
 	int vt_mode;
+	int samsung_app;
 	int zoom;
 	int smart_zoom_mode;
 
 	int m9mo_fw_done;
 	int fw_info_done;
 
+	int start_cap_kind;
 	unsigned int fps;
 
 	int factory_down_check;
@@ -340,6 +343,12 @@ struct m9mo_state {
 
 	int preview_width;
 	int preview_height;
+
+	int mburst_start;
+
+	int strobe_en;
+	int sharpness;
+	int saturation;
 };
 
 /* Category */
@@ -433,6 +442,8 @@ struct m9mo_state {
 
 /* M9MO_CATEGORY_NEW: 0x04 */
 #define M9MO_NEW_TIME_INFO		0x02
+#define M9MO_NEW_OIS_CUR_MODE	0x06
+#define M9MO_NEW_OIS_TIMER		0x07
 #define M9MO_NEW_DETECT_SCENE	0x0B
 #define M9MO_NEW_OIS_VERSION	0x1B
 
@@ -528,6 +539,7 @@ struct m9mo_state {
 #define M9MO_LENS_ZOOM_STATUS		0x26
 #define M9MO_LENS_LENS_STATUS		0x28
 #define M9MO_LENS_ZOOM_LENS_STATUS	0x2A
+#define M9MO_LENS_TIMER_LED			0x2D
 #define M9MO_LENS_AF_TOUCH_POSX		0x30
 #define M9MO_LENS_AF_TOUCH_POSY		0x32
 #define M9MO_LENS_AF_VERSION		0x60

@@ -146,6 +146,10 @@ static struct device *bus_dev;
 
 int touch_is_pressed = 0;
 
+#if defined(CONFIG_TARGET_LOCALE_KOR)
+static int noise_mode_indicator;
+#endif
+
 #define ISC_DL_MODE	1
 
 /* 4.8" OCTA LCD */
@@ -659,8 +663,21 @@ static irqreturn_t mms_ts_interrupt(int irq, void *dev_id)
 
 	if (buf[0] == 0x0E) { /* NOISE MODE */
 		dev_dbg(&client->dev, "[TSP] noise mode enter!!\n");
+#if defined(CONFIG_TARGET_LOCALE_KOR)
+		if (noise_mode_indicator == 0) {
+			noise_mode_indicator++;
+			dev_dbg(&client->dev, "[TSP] mms reset by noise mode!!\n");
+			reset_mms_ts(info);
+			info->noise_mode = 0;
+		} else {
+			info->noise_mode = 1 ;
+			dev_dbg(&client->dev, "[TSP] set noise mode!!\n");
+			mms_set_noise_mode(info);
+		}
+#else
 		info->noise_mode = 1 ;
 		mms_set_noise_mode(info);
+#endif
 		goto out;
 	}
 
@@ -3044,6 +3061,10 @@ static int __devinit mms_ts_probe(struct i2c_client *client,
 #endif
 	touch_is_pressed = 0;
 
+#if defined(CONFIG_TARGET_LOCALE_KOR)
+	noise_mode_indicator = 0;
+#endif
+
 #if 0
 	gpio_request(GPIO_OLED_DET, "OLED_DET");
 	ret = gpio_get_value(GPIO_OLED_DET);
@@ -3232,6 +3253,92 @@ static int __devexit mms_ts_remove(struct i2c_client *client)
 
 	return 0;
 }
+
+/*
+#if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
+static int mms_ts_suspend(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct mms_ts_info *info = i2c_get_clientdata(client);
+
+	if (!info->enabled)
+		return 0;
+
+	dev_notice(&info->client->dev, "%s: users=%d\n", __func__,
+		   info->input_dev->users);
+
+	disable_irq(info->irq);
+	info->enabled = false;
+	touch_is_pressed = 0;
+#if defined(CONFIG_TARGET_LOCALE_KOR)
+	noise_mode_indicator = 0;
+#endif
+	release_all_fingers(info);
+	info->pdata->power(false);
+*/
+	/* This delay needs to prevent unstable POR by
+	rapid frequently pressing of PWR key. */
+/*
+	msleep(50);
+	return 0;
+}
+*/
+
+/*
+static int mms_ts_resume(struct device *dev)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct mms_ts_info *info = i2c_get_clientdata(client);
+	int ret = 0;
+
+	if (info->enabled)
+		return 0;
+
+	dev_notice(&info->client->dev, "%s: users=%d\n", __func__,
+		   info->input_dev->users);
+// jk45.kim: To up TSP init speed.
+#if !defined(CONFIG_TARGET_LOCALE_KOR)
+	info->pdata->power(true);
+	msleep(120);
+#endif
+// jk45.kim
+
+	if (info->ta_status) {
+		dev_notice(&client->dev, "TA connect!!!\n");
+		i2c_smbus_write_byte_data(info->client, 0x33, 0x1);
+	} else {
+		dev_notice(&client->dev, "TA disconnect!!!\n");
+		i2c_smbus_write_byte_data(info->client, 0x33, 0x2);
+	}
+*/
+	/* Because irq_type by EXT_INTxCON register is changed to low_level
+	 *  after wakeup, irq_type set to falling edge interrupt again.
+	 */
+/*
+	enable_irq(info->irq);
+	info->enabled = true;
+	mms_set_noise_mode(info);
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void mms_ts_early_suspend(struct early_suspend *h)
+{
+	struct mms_ts_info *info;
+	info = container_of(h, struct mms_ts_info, early_suspend);
+	mms_ts_suspend(&info->client->dev);
+
+}
+
+static void mms_ts_late_resume(struct early_suspend *h)
+{
+	struct mms_ts_info *info;
+	info = container_of(h, struct mms_ts_info, early_suspend);
+	mms_ts_resume(&info->client->dev);
+}
+#endif
+*/
 
 #if defined(CONFIG_PM) && !defined(CONFIG_HAS_EARLYSUSPEND)
 static const struct dev_pm_ops mms_ts_pm_ops = {

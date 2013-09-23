@@ -24,6 +24,11 @@
 
 #ifdef __KERNEL__
 struct sii9234_platform_data {
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+	int udelay;
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
 	u8 power_state;
 	u8	swing_level;
 	u8	factory_test;

@@ -871,6 +871,9 @@ config MACH_Q1_BD
 	bool "Q1 Board"
 
 endchoice
+config TARGET_LOCALE_NAATT_TEMP
+        bool "Support North America GSM ATT Board"
+        default n
 
 config MACH_PX
 	bool "PX board"
@@ -1131,6 +1134,7 @@ config IRON_BD
 config GRANDE_BD
 	bool "Grande common Board"
 
+source "arch/arm/mach-exynos/Kconfig.slp"
 
 config WRITEBACK_ENABLED
 	bool "Samsung Writeback Enable"
@@ -1713,9 +1717,20 @@ config SEC_MODEM_T0_TD_DUAL
 	select TDSCDMA_MODEM_SPRD8803
 	select LINK_DEVICE_SPI
 
+config SEC_MODEM_U1_SPR
+        bool "U1 with qsc6085"
+        select CDMA_MODEM_QSC6085
+        select LINK_DEVICE_DPRAM
+        select INTERNAL_MODEM_IF
+
 endchoice
 
 endif
+
+comment "Connectivity Feature"
+config GPS_BRCM_475X
+	bool "BRCM_475X_CHIPSET"
+	default n
 
 if BT
 config BT_CSR8811
@@ -1766,6 +1781,10 @@ config EMI_ERROR_RECOVERY
 	bool "unsuspected emi error recovery on HUB"
 	default n
 
+config SIM_DETECT
+	bool "support sim detect"
+	default n
+
 if QC_MODEM
 choice
 	prompt "QC MODEM CONFIG"
@@ -1811,3 +1830,8 @@ config CHARGE_LEVEL
 	default y
 	help
 	  Allows configuration of ac and usb charging levels
+
+config CPU_FREQ_TETHERING
+	bool "Lock cpu freq & bus clock when tethering mode turn on"
+	depends on QC_MODEM
+	default n

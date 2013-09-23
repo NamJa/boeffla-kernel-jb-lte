@@ -94,7 +94,11 @@ static int s5p_ehci_configurate(struct usb_hcd *hcd)
 
 	/* DMA burst Enable, set utmi suspend_on_n */
 #ifdef CONFIG_USB_OHCI_S5P
+#ifdef CONFIG_CDMA_MODEM_MDM6600
+	writel(readl(INSNREG00(hcd->regs)) | ENA_DMA_INCR | OHCI_SUSP_LGCY,
+#else
 	writel(readl(INSNREG00(hcd->regs)) | ENA_DMA_INCR,
+#endif
 #else
 	writel(readl(INSNREG00(hcd->regs)) | ENA_DMA_INCR,
 #endif
@@ -375,6 +379,8 @@ static int s5p_ehci_runtime_resume(struct device *dev)
 		usb_root_hub_lost_power(hcd->self.root_hub);
 
 		ehci_writel(ehci, FLAG_CF, &ehci->regs->configured_flag);
+		ehci_writel(ehci, INTR_MASK, &ehci->regs->intr_enable);
+		(void)ehci_readl(ehci, &ehci->regs->intr_enable);
 
 		/* here we "know" root ports should always stay powered */
 		ehci_port_power(ehci, 1);

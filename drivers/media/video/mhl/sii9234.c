@@ -130,7 +130,7 @@ static struct mutex sii9234_irq_lock;
 int en_irq;
 #	define sii9234_enable_irq() \
 	do { \
-		sii9234_mutex_lock(&sii9234_irq_lock); \
+		mutex_lock(&sii9234_irq_lock); \
 		if (atomic_read(&sii9234->is_irq_enabled) == false) { \
 			atomic_set(&sii9234->is_irq_enabled, true); \
 			enable_irq(sii9234->pdata->mhl_tx_client->irq); \
@@ -140,12 +140,12 @@ int en_irq;
 			printk(KERN_INFO"%s() : irq is already enabled(%d)\n" \
 					, __func__, en_irq); \
 		} \
-		sii9234_mutex_unlock(&sii9234_irq_lock); \
+		mutex_unlock(&sii9234_irq_lock); \
 	} while (0)
 
 #	define sii9234_disable_irq() \
 	do { \
-		sii9234_mutex_lock(&sii9234_irq_lock); \
+		mutex_lock(&sii9234_irq_lock); \
 		if (atomic_read(&sii9234->is_irq_enabled) == true) { \
 			atomic_set(&sii9234->is_irq_enabled, false); \
 			disable_irq_nosync(sii9234->pdata->mhl_tx_client->irq);\
@@ -155,27 +155,27 @@ int en_irq;
 			printk(KERN_INFO"%s() : irq is already disabled(%d)\n"\
 					, __func__, en_irq); \
 		} \
-		sii9234_mutex_unlock(&sii9234_irq_lock); \
+		mutex_unlock(&sii9234_irq_lock); \
 	} while (0)
 #else
 #	define sii9234_enable_irq() \
 	do { \
-		sii9234_mutex_lock(&sii9234_irq_lock); \
+		mutex_lock(&sii9234_irq_lock); \
 		if (atomic_read(&sii9234->is_irq_enabled) == false) { \
 			atomic_set(&sii9234->is_irq_enabled, true); \
 			enable_irq(sii9234->pdata->mhl_tx_client->irq); \
 		} \
-		sii9234_mutex_unlock(&sii9234_irq_lock); \
+		mutex_unlock(&sii9234_irq_lock); \
 	} while (0)
 
 #	define sii9234_disable_irq() \
 	do { \
-		sii9234_mutex_lock(&sii9234_irq_lock); \
+		mutex_lock(&sii9234_irq_lock); \
 		if (atomic_read(&sii9234->is_irq_enabled) == true) { \
 			atomic_set(&sii9234->is_irq_enabled, false); \
 			disable_irq_nosync(sii9234->pdata->mhl_tx_client->irq);\
 		} \
-		sii9234_mutex_unlock(&sii9234_irq_lock); \
+		mutex_unlock(&sii9234_irq_lock); \
 	} while (0)
 #endif /*__SII9234_IRQ_DEBUG__*/
 
@@ -636,6 +636,133 @@ static int cbus_set_reg(struct sii9234_data *sii9234, unsigned int offset,
 
 	return cbus_write_reg(sii9234, offset, value);
 }
+
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+// [START][Samsung Kor-4G] KT_SPIDER_FEATURE
+static void spider_disconnect(struct sii9234_data *sii9234)
+{
+	sii9234->sm_issued = false;
+	spider_handle_msg(sii9234, NULL, SPIDER_DISCONNECTED);
+}
+// [END][Samsung Kor-4G] KT_SPIDER_FEATURE
+
+static int cbus_read_block(struct sii9234_data *sii9234, unsigned int offset,
+							u8 *value, u8 count)
+{
+	int ret;
+	struct i2c_msg i2cmsg[2];
+
+	dbg_enter();
+
+	i2cmsg[0].addr = (sii9234->pdata->cbus_client->addr);
+	i2cmsg[0].flags = 0;
+	i2cmsg[0].len = 1;
+ 	i2cmsg[0].buf = (__u8 *)&offset;
+
+	i2cmsg[1].addr = (sii9234->pdata->cbus_client->addr);
+	i2cmsg[1].flags = 1;
+	i2cmsg[1].len = count;
+ 	i2cmsg[1].buf = value;
+
+	ret = i2c_transfer(sii9234->pdata->cbus_client->adapter,
+						(struct i2c_msg *)&i2cmsg, 2);
+
+	if (ret < 0)
+	{
+		pr_err("spider: %s: cbus_read_block failed(%d)\n",
+								__func__, ret);
+		return -EIO;
+	}
+
+	dbg_leave();
+
+	return ret;
+}
+
+static int cbus_write_block(struct sii9234_data *sii9234, unsigned int offset,
+							u8 *value, u8 count)
+{
+	int ret;
+
+	dbg_enter();
+
+	ret = i2c_smbus_write_block_data(sii9234->pdata->cbus_client, offset,
+								count, value);
+	if (0 > ret) {
+		pr_err("spider: %s: cbus_write_block failed(%d)\n",
+								__func__, ret);
+		return -EIO;
+	}
+
+	dbg_leave();
+
+	return ret;
+}
+
+/*
+ * Steps for performing WRITE_BURST Command; excerpted from PR doc
+ * 1. Write WRITE_BURST CBUS offset(0x40-0x4F) to register Page3:0x13
+ * 2. Subtract 1 from the total number of peer's scratchpad registers need to be
+ *    written, write this value in register Page3:0x20
+ * 3. Populate corresponding scratchpad register (Page3:0x70-0x7F) on the host.
+ * 4. Set bit 4 of register Page3:0x12 to start the CBUS transmission.
+ * 5. Check if the command being sent is completed by polling interrupt register 0xE6:0x08. Write back the value to clear the interrupts.
+ * 6. Check peer's scratchpad register.
+ */
+static int cbus_send_wb(struct sii9234_data *sii9234, char *buf, int count)
+{
+	int ret;
+
+	dbg_enter();
+
+/* 1. Write WRITE_BURST CBUS offset(0x40-0x4F) to register Page3:0x13 */
+	cbus_write_reg(sii9234, 0x13, 0x40);
+
+/* 2. Subtract 1 from the total number of peer's scratchpad registers need to be
+ *    written, write this value in register Page3:0x20 */
+ 	cbus_write_reg(sii9234, 0x20, count-1);
+
+/* 3. Populate corresponding scratchpad register (Page3:0x70-0x7F) on the
+      host. */
+#ifdef DEBUG
+	pr_info("spider: test: %s: buffers to send = \n", __func__);
+	for (ret = 0; ret < count; ret++) {
+		pr_cont("%02X ", buf[ret]);
+		if (7 == ret)
+			pr_cont("- ");
+	}
+	pr_cont("\n");
+#endif
+
+	ret = cbus_write_block(sii9234, 0xBF, buf, count);
+	if (0 > ret) {
+		pr_err("spider: %s: cbus_write_block failed(%d)\n",
+								__func__, ret);
+		return -EIO;
+	}
+
+/* 4. Set bit 4 of register Page3:0x12 to start the CBUS transmission. */
+	cbus_set_reg(sii9234, 0x12, 1<<4);
+
+	usleep_range(500, 1000);
+
+	/* check the result */
+	cbus_read_reg(sii9234, 0x20, (u8 *)&ret);
+	pr_info("spider: %s: cbus_write_block returned %02X\n", __func__, ret);
+	if ((1<<6) & ret)
+		pr_warn("spider: %s: MSC_MT_DONE_NACK\n", __func__);
+
+/* 5. Check if the command being sent is completed by polling interrupt register
+      0xE6:0x08. Write back the value to clear the interrupts. */
+	/* There's no 0xE6 in the PR doc */
+
+	dbg_leave();
+
+	return ret;
+}
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
 
 #ifdef __CONFIG_TMDS_OFFON_WORKAROUND__
 void sii9234_tmds_offon_work(struct work_struct *work)
@@ -2319,7 +2446,14 @@ static int sii9234_detection_callback(void)
 
 	ret = cbus_write_reg(sii9234,
 			     CBUS_INTR2_ENABLE_REG,
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifndef CONFIG_SPIDER_MHL			     
 			     WRT_STAT_RECD_MASK | SET_INT_RECD_MASK);
+#else
+			     WRT_BURST_RECD_MASK);
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
+									
 	if (ret < 0)
 		goto unhandled_nolock;
 
@@ -2360,6 +2494,12 @@ static int sii9234_detection_callback(void)
 	else if (sii9234->state == STATE_CBUS_LOCKOUT)
 		pr_cont(" (cbus_lockout)");
 	pr_cont("\n");
+
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+	spider_disconnect(sii9234);
+#endif
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
 
 	/*mhl spec: 8.3.3, if discovery failed, must retry discovering */
 #ifdef	CONFIG_SAMSUNG_USE_11PIN_CONNECTOR
@@ -2413,6 +2553,13 @@ static void sii9234_cancel_callback(void)
 
 	sii9234_mutex_lock(&sii9234->lock);
 	sii9234_power_down(sii9234);
+
+// [START][Samsung Kor-4G] KT_SPIDER_FEATURE
+#ifdef CONFIG_SPIDER_MHL
+	spider_disconnect(sii9234);
+#endif
+// [END][Samsung Kor-4G] KT_SPIDER_FEATURE
+
 	sii9234_mutex_unlock(&sii9234->lock);
 }
 
@@ -2760,6 +2907,26 @@ static int sii9234_30pin_init_for_9290(struct sii9234_data *sii9234)
 	sii9234_mutex_unlock(&sii9234->lock);
 	return false;
 }
+static struct workqueue_struct *sii9234_tmds_reset_wq;
+
+void sii9234_tmds_reset()
+{
+	struct sii9234_data *sii9234 = dev_get_drvdata(sii9244_mhldev);
+	queue_work(sii9234_tmds_reset_wq, &(sii9234->tmds_reset_work));
+}
+void sii9234_tmds_reset_work(struct work_struct *work)
+{
+	/*this function is a workaround for LSI AP*/
+	struct sii9234_data *sii9234 = dev_get_drvdata(sii9244_mhldev);
+
+	msleep(80);
+	mhl_tx_write_reg(sii9234, 0x1A, 1 << 4);
+	mhl_tx_clear_reg(sii9234, 0x1A, 1 << 4);
+	pr_info("sii9234: tmds reset\n");
+
+}
+EXPORT_SYMBOL(sii9234_tmds_reset);
+
 #endif				/* CONFIG_SAMSUNG_MHL_9290 */
 
 static void save_cbus_pkt_to_buffer(struct sii9234_data *sii9234)
@@ -3220,7 +3387,22 @@ static irqreturn_t sii9234_irq_thread(int irq, void *data)
 		return IRQ_HANDLED;
 	}
 
-	msleep(30);
+// [START][Samsung Kor-4G] KT_SPIDER_FEATURE
+#ifdef CONFIG_SPIDER_MHL
+	if (sii9234->sm_connected) {
+		if (sii9234->sm_discovery == false) {
+			msleep(30);
+			sii9234->sm_discovery = true;
+		} else {
+			msleep(5);
+		}
+	}
+	else
+#endif	/* CONFIG_SPIDER_MHL */
+// [END][Samsung Kor-4G] KT_SPIDER_FEATURE
+	{
+		msleep(30);
+	}
 
 	sii9234_mutex_lock(&sii9234->lock);
 
@@ -3598,6 +3780,16 @@ static irqreturn_t sii9234_irq_thread(int irq, void *data)
 
 		if (cbus_intr2 & SET_INT_RECD)
 			cbus_handle_set_int_recd(sii9234);
+
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+		if (cbus_intr2 & WRT_BURST_RECD) {
+			pr_debug("sii9234: write burst received\n");
+			cbus_handle_msg(sii9234, SPIDER_WRITE_BURST_MSG);
+		}
+		cbus_write_reg(sii9234, CBUS_INT_STATUS_2_REG, cbus_intr2 & 1);
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
 	}
 
  err_exit:
@@ -3634,6 +3826,12 @@ static irqreturn_t sii9234_irq_thread(int irq, void *data)
 				mhl_onoff_ex(0);
 			}
 		}
+
+// [START][Samsung Kor-4G] KT_SPIDER_FEATURE
+#if 0//def CONFIG_SPIDER_MHL
+		spider_disconnect(sii9234);
+#endif
+// [END][Samsung Kor-4G] KT_SPIDER_FEATURE
 	}
 	return IRQ_HANDLED;
 
@@ -3844,6 +4042,587 @@ static const struct dev_pm_ops sii9234_pm_ops = {
 };
 #endif
 #endif
+
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+static struct sii9234_data *spider_get_sii9234_data(void)
+{
+	return g_sii9234;
+}
+
+static struct spider_event *spider_get_queue(struct sii9234_data *sii9234)
+{
+	struct spider_event *event;
+
+	dbg_enter();
+
+	if (sii9234->qtail == sii9234->qhead) {
+		pr_info("spider: %s: queue empty\n", __func__);
+		return NULL;
+	}
+
+	event = &sii9234->eventq[sii9234->qhead];
+	sii9234->qhead++;
+	sii9234->qhead %= MAX_EVENT_QUEUE;
+
+	dbg_leave();
+
+	return event;
+}
+
+static void spider_put_queue(struct sii9234_data *sii9234,
+						struct spider_event *event)
+{
+	dbg_enter();
+
+	if ((sii9234->qtail + 1) % MAX_EVENT_QUEUE == sii9234->qhead) {
+		pr_warn("spider: %s: queue full\n", __func__);
+		return;
+	}
+
+	memcpy(&sii9234->eventq[sii9234->qtail], event,
+					sizeof(struct spider_event));
+
+	sii9234->qtail++;
+	sii9234->qtail %= MAX_EVENT_QUEUE;
+
+	dbg_leave();
+}
+
+static void spider_issue_event(struct sii9234_data *sii9234,
+					struct spider_event *event)
+{
+	dbg_enter();
+
+	if (sii9234->sm_issued) {
+		pr_debug("spider: %s: already issued\n", __func__);
+		sii9234->sm_issued = false;
+		return;
+	}
+
+	mutex_lock(&sii9234->spider_lock);
+
+	spider_put_queue(sii9234, event);
+
+	mutex_unlock(&sii9234->spider_lock);
+
+	if (sii9234->isopened) {
+		wake_up_interruptible(&sii9234->spider_wq);
+		pr_info("spider: %s: event queued\n", __func__);
+	}
+
+	dbg_leave();
+}
+
+static BLOCKING_NOTIFIER_HEAD(spider_notifier_list);
+
+void spider_register_notifier(struct notifier_block *nb)
+{
+	dbg_enter();
+
+	blocking_notifier_chain_register(&spider_notifier_list, nb);
+
+	dbg_leave();
+}
+EXPORT_SYMBOL_GPL(spider_register_notifier);
+
+void spider_unregister_notifier(struct notifier_block *nb)
+{
+	dbg_enter();
+
+	blocking_notifier_chain_unregister(&spider_notifier_list, nb);
+
+	dbg_leave();
+}
+EXPORT_SYMBOL_GPL(spider_unregister_notifier);
+
+static void spider_mouse_event(struct sii9234_data *sii9234,
+						struct spider_event *event)
+{
+	dbg_enter();
+
+	blocking_notifier_call_chain(&spider_notifier_list, 0, event);
+
+	dbg_leave();
+}
+
+static void spider_handle_new_state(struct sii9234_data *sii9234,
+						struct spider_event *event)
+{
+	int mhl_state;
+	int mouse_state;
+	int other_state;
+
+	dbg_enter();
+
+	mhl_state = SM_DEV_TYPE_MHL & event->dev_type;
+	mouse_state = SM_DEV_TYPE_MOUSE & event->dev_type;
+	other_state = SM_DEV_TYPE_NOT_MOUSE & event->dev_type;
+
+#if KEYBD_PERF
+	if ((SM_DEV_TYPE_KEYBOARD & event->dev_type)
+		&& (SM_DEV_STATE_CONNECTED & event->event_state)) {
+		pr_info("\n\n#$#$#$# spider: %s: Keyboard connected\n",
+								__func__);
+		sii9234->keycnt = 0;
+	}
+#endif
+
+	/* handle mhl cable, keyboard state change */
+	/* or keep alive message */
+	if (other_state) {
+		spider_issue_event(sii9234, event);
+
+		/* prevent spider_handle_new_event issues this same event
+									again */
+		sii9234->sm_issued = true;
+
+		if (mhl_state) {
+			if (SM_DEV_STATE_CONNECTED & event->event_state) {
+				pr_info("spider: %s: sm_connected\n", __func__);
+
+				sii9234->sm_connected = true;
+			} else {
+				pr_info("spider: %s: sm_disconnected\n",
+								__func__);
+
+				sii9234->sm_connected = false;
+				// [START][Samsung Kor-4G] KT_SPIDER_FEATURE
+				sii9234->sm_discovery = false;
+				// [END][Samsung Kor-4G] KT_SPIDER_FEATURE
+			}
+		}
+	}
+
+	/* handle mouse state change */
+	if (mouse_state) {
+		spider_mouse_event(sii9234, event);
+	}
+
+	dbg_leave();
+}
+
+static void spider_handle_new_event(struct sii9234_data *sii9234,
+						struct spider_event *event)
+{
+	int mouse_event;
+	int kbd_event;
+
+	dbg_enter();
+
+	mouse_event = SM_DEV_EVENT_MOUSE & event->event_state;
+	kbd_event = SM_DEV_EVENT_KEYBOARD & event->event_state;
+
+	if (mouse_event) {
+		pr_debug("spider: %s: mouse event\n", __func__);
+
+		spider_mouse_event(sii9234, event);
+	}
+	
+	if (kbd_event) {
+#if KEYBD_PERF
+		pr_info("spider: %s: keyboard event %d\n", __func__,
+							sii9234->keycnt++);
+		pr_cont("%02X %02X %02X %02X\n", event->kbd_data[0],
+				event->kbd_data[1], event->kbd_data[2],
+				event->kbd_data[3]);
+#endif
+		pr_debug("spider: %s: keyboard event\n", __func__);
+
+		event->event_state = SM_DEV_EVENT_KEYBOARD;
+		spider_issue_event(sii9234, event);
+	}
+
+	dbg_leave();
+}
+
+static void spider_handle_msg(struct sii9234_data *sii9234, void *data,
+								int state)
+{
+	struct spider_event *event = (struct spider_event *)data;
+	struct spider_event new_spider_event = {0, };
+
+	int new_state;
+	int new_event;
+
+	dbg_enter();
+
+	switch (state) {
+	case SPIDER_WRITE_BURST_MSG:
+		pr_debug("spider: %s: SPIDER_WRITE_BURST_MSG\n", __func__);
+
+		new_state = SM_DEV_STATE_MASK & event->event_state;
+		new_event = SM_DEV_EVENT_MASK & event->event_state;
+
+		if (new_state) {
+			pr_debug("spider: %s: SM_DEV_STATE_CHANGED\n", __func__);
+
+			spider_handle_new_state(sii9234, event);
+		}
+
+		if (!sii9234->sm_connected) {
+			pr_info("spider: %s: !sm_connected\n", __func__);
+			break;
+		}
+
+		if (new_event) {
+			pr_debug("spider: %s: SM_DEV_EVENT_RECEIVED\n",
+								__func__);
+
+			spider_handle_new_event(sii9234, event);
+		}
+
+		sii9234->sm_issued = false;
+		break;
+
+	case SPIDER_DISCONNECTED:
+		pr_info("spider: %s: SPIDER_DISCONNECTED\n", __func__);
+
+		if (!sii9234->sm_connected) {
+			pr_warn("spider: %s: Not connected\n", __func__);
+			break;
+		}
+
+		event = &new_spider_event;
+
+		/* issue usb mouse disconnected */
+		event->dev_type = SM_DEV_TYPE_MOUSE;
+		event->event_state = SM_DEV_STATE_DISCONNECTED;
+		spider_mouse_event(sii9234, event);
+
+		/* issue mhl disconnected */
+		event->dev_type = SM_DEV_TYPE_MHL;
+		event->event_state = SM_DEV_STATE_DISCONNECTED;
+		spider_issue_event(sii9234, event);
+
+		sii9234->sm_connected = false;
+		// [START][Samsung Kor-4G] KT_SPIDER_FEATURE
+		sii9234->sm_discovery = false;
+		// [END][Samsung Kor-4G] KT_SPIDER_FEATURE
+		break;
+
+	default:
+		pr_err("spider: %s: unknown state %d\n", __func__, state);
+		break;
+	}
+
+	dbg_leave();
+}
+
+static void cbus_handle_msg(struct sii9234_data *sii9234, int state)
+{
+	int ret;
+	u8 val[16] = {0, };
+
+	dbg_enter();
+
+	switch (state) {
+	case SPIDER_WRITE_BURST_MSG:
+		pr_debug("spider: %s: SPIDER_WRITE_BURST_MSG\n", __func__);
+
+		ret = cbus_read_block(sii9234, MHL_SCRATCHPAD_REG_0,
+								&val[0], 16);
+		if (0 > ret) {
+			pr_err("spider: %s: cbus_read_block failed(%d)\n",
+								__func__, ret);
+			break;
+		}
+
+#ifdef CONFIG_SPIDER_MHL_DEBUG
+		pr_info("spider: %s: received write_burst data:\n", __func__);
+
+		for (ret = 0; ret < 16; ret++) {
+			pr_cont("%02X ", val[ret]);
+			if (7 == ret)
+				pr_cont("- ");
+		}
+		pr_cont("\n");
+#endif
+
+		spider_handle_msg(sii9234, (void *)&val[0],
+							SPIDER_WRITE_BURST_MSG);
+		break;
+
+#if 0
+	case SPIDER_MSC_MSG:
+		pr_info("spider: %s: SPIDER_MSC_MSG\n", __func__);
+		ret = cbus_read_reg(sii9234, CBUS_MSC_FIRST_DATA_IN,
+								&val[0]);
+		if (0 > ret) {
+			pr_err("spider: %s: cbus_read_reg1 failed(%d)\n",
+							__func__, ret);
+		} else {
+			pr_info("spider: %s 1: %#02x received\n",
+							__func__, val[0]);
+		}
+
+		ret = cbus_read_reg(sii9234, CBUS_MSC_MSG_CMD_IN, &val[1]);
+		if (0 > ret) {
+			pr_err("spider: %s: cbus_read_reg2 failed(%d)\n",
+							__func__, ret);
+		} else {
+			pr_info("spider: %s 2: %#02x received\n",
+							__func__, val[1]);
+		}
+
+		ret = cbus_read_reg(sii9234, CBUS_MSC_MSG_DATA_IN, &val[2]);
+		if (0 > ret) {
+			pr_err("spider: %s: cbus_read_reg3 failed(%d)\n",
+							__func__, ret);
+		} else {
+			pr_info("spider: %s 3: %#02x received\n",
+							__func__, val[2]);
+		}
+
+		if ((SPIDER_EDID_LAPTOP_OLD == *(unsigned int *)&val[0]) ||
+			(SPIDER_EDID_LAPTOP == *(unsigned int *)&val[0])) {
+			pr_info("spider: %s: SPIDER_LAPTOP%s connected\n",
+				__func__, (0xff == val[1]) ? "(NEW)" : "(OLD)");
+			spider_handle_msg(sii9234, NULL, SPIDER_CONNECTED);
+		}
+		break;
+#endif
+
+	default:
+		pr_err("spider: %s: can't reach here!\n", __func__);
+		break;
+	}
+
+	dbg_leave();
+}
+
+static int spider_open(struct inode *inode, struct file *filp)
+{
+	struct sii9234_data *sii9234 = spider_get_sii9234_data();
+
+	dbg_enter();
+
+	if (sii9234->isopened) {
+		pr_warn("sii9234: %s: already opened\n", __func__);
+		return -EBUSY;
+	}
+
+	filp->private_data = sii9234;
+	sii9234->isopened = true;
+
+	dbg_leave();
+
+	return 0;
+}
+
+static int spider_release(struct inode *inode, struct file *filp)
+{
+	struct sii9234_data *sii9234 = spider_get_sii9234_data();
+
+	dbg_enter();
+
+	spider_fasync(-1, filp, 0);
+
+	sii9234->isopened = false;
+	filp->private_data = NULL;
+
+	dbg_leave();
+
+	return 0;
+}
+
+static ssize_t spider_read(struct file *filp, char *buf, size_t count,
+							loff_t *ppos)
+{
+	struct sii9234_data *sii9234 = filp->private_data;
+	struct spider_event *event;
+
+	int ret = -1;
+
+	dbg_enter();
+
+	if (sizeof(struct spider_event) > count)
+		return -EINVAL;
+
+	if (O_NONBLOCK & filp->f_flags)
+		return -EAGAIN;
+
+	ret = wait_event_interruptible(sii9234->spider_wq,
+				sii9234->qhead != sii9234->qtail);
+
+	if (ret)
+		return ret;
+
+	mutex_lock(&sii9234->spider_lock);
+
+	event = spider_get_queue(sii9234);
+
+	mutex_unlock(&sii9234->spider_lock);
+
+	if (copy_to_user(buf, event, count))
+		return -EFAULT;
+
+	dbg_leave();
+
+	return count;
+}
+
+static ssize_t spider_write(struct file *filp, const char *buf,
+					size_t count, loff_t *ppos)
+{
+	struct sii9234_data *sii9234 = filp->private_data;
+	char event[16] = {0, };
+	int ret;
+
+	dbg_enter();
+
+#if 0	/* TEST TMDS_EN 12-05-08 pianist */
+{
+	static bool enable = false;
+
+	if (enable) {
+		ret = mhl_tx_set_reg(sii9234, MHL_TX_TMDS_CCTRL, (1<<4));
+	} else {
+		ret = mhl_tx_clear_reg(sii9234, MHL_TX_TMDS_CCTRL, (1<<4));
+	}
+
+	pr_info("spider: %s: TMDS %sabled\n", __func__, enable ? "en" : "dis");
+	enable = !enable;
+}
+#endif
+
+	if ((ret = copy_from_user(event, buf, count))) {
+		pr_err("spider: %s failed(%d)\n", __func__, ret);
+		return -EFAULT;
+	}
+
+#ifdef DEBUG
+	pr_info("spider: test: %s: buffers to send = \n", __func__);
+	for (ret = 0; ret < count; ret++) {
+		pr_cont("%02X ", event[ret]);
+		if (7 == ret)
+			pr_cont("- ");
+	}
+	pr_cont("\n");
+#endif
+
+	ret = cbus_send_wb(sii9234, event, count);
+	if (0 > ret) {
+		pr_err("spider: %s failed(%d)\n", __func__, ret);
+		return -EIO;
+	}
+
+	dbg_leave();
+
+	return count;
+}
+
+static unsigned int spider_poll(struct file *filp,
+					struct poll_table_struct *wait)
+{
+	struct sii9234_data *sii9234 = filp->private_data;
+
+	dbg_enter();
+
+	poll_wait(filp, &sii9234->spider_wq, wait);
+
+	if (sii9234->qhead != sii9234->qtail)
+		return POLLIN | POLLRDNORM;
+
+	dbg_leave();
+
+	return 0;
+}
+
+static long spider_ioctl(struct file *filp, unsigned int cmd,
+							unsigned long arg)
+{
+	dbg_enter();
+
+	dbg_leave();
+
+	return 0;
+}
+
+static int spider_fasync(int fd, struct file *filp, int on)
+{
+	struct sii9234_data *sii9234 = filp->private_data;
+	int ret;
+
+	dbg_enter();
+
+	ret = fasync_helper(fd, filp, on, &sii9234->spider_fa);
+	if (0 > ret)
+		return ret;
+
+	dbg_leave();
+
+	return 0;
+}
+
+static struct file_operations spider_fops = {
+	.owner = THIS_MODULE,
+	.read  = spider_read,
+	.write = spider_write,
+	.unlocked_ioctl = spider_ioctl,
+	.open  = spider_open,
+	.release = spider_release,
+	.poll  = spider_poll,
+	.fasync = spider_fasync,
+};
+
+static struct miscdevice spider_dev = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name  = MODULE_NAME,
+	.fops  = &spider_fops,
+};
+
+static int spider_init(struct sii9234_data *sii9234)
+{
+	int ret = -1;
+
+	dbg_enter();
+
+	if (NULL == sii9234) {
+		pr_err("spider: %s: spider_init failed\n", __func__);
+		return -EINVAL;
+	}
+
+	g_sii9234 = sii9234;
+	sii9234->eventq = &events[0];
+
+	memset(sii9234->eventq, 0, sizeof(struct spider_event)
+							* MAX_EVENT_QUEUE);
+
+	init_waitqueue_head(&sii9234->spider_wq);
+	mutex_init(&sii9234->spider_lock);
+
+	sii9234->qhead = sii9234->qtail = 0;
+	sii9234->sm_connected = false;
+	// [START][Samsung Kor-4G] KT_SPIDER_FEATURE
+	sii9234->sm_discovery = false;
+	// [END][Samsung Kor-4G] KT_SPIDER_FEATURE
+
+	ret = misc_register(&spider_dev);
+	if (ret) {
+		pr_err("spider: %s: misc_register failed(%d)\n",
+							__func__, ret);
+
+		spider_exit();
+
+		return ret;
+	}
+
+	dbg_leave();
+
+	return 0;
+}
+
+static void spider_exit(void)
+{
+	dbg_enter();
+
+	misc_deregister(&spider_dev);
+
+	dbg_leave();
+}
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
 
 #ifdef CONFIG_EXTCON
 static void sii9234_extcon_work(struct work_struct *work)
@@ -4090,6 +4869,14 @@ static int __devinit sii9234_mhl_tx_i2c_probe(struct i2c_client *client,
 #ifdef CONFIG_SAMSUNG_MHL_9290
 	sii9234->acc_con_nb.notifier_call = sii9234_30pin_callback;
 	acc_register_notifier(&sii9234->acc_con_nb);
+
+	sii9234_tmds_reset_wq =
+		create_singlethread_workqueue("sii9234_tmds_reset_wq");
+	if (!sii9234_tmds_reset_wq) {
+		printk(KERN_ERR	"[ERROR] %s() tmds_reset"
+				" workqueue create fail\n", __func__);
+	}
+	INIT_WORK(&sii9234->tmds_reset_work, sii9234_tmds_reset_work);
 #endif
 
 #ifdef CONFIG_EXTCON
@@ -4115,6 +4902,15 @@ static int __devinit sii9234_mhl_tx_i2c_probe(struct i2c_client *client,
 	register_early_suspend(&sii9234->early_suspend);
 	sii9234->suspend_state = false;
 #endif
+
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+	ret = spider_init(sii9234);
+	if (0 > ret)
+		goto err_exit0;
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
+
 #ifdef __CONFIG_TMDS_OFFON_WORKAROUND__
 	sii9234->tmds_state = 0;
 #endif
@@ -4192,6 +4988,12 @@ static int __devinit sii9234_cbus_i2c_probe(struct i2c_client *client,
 	struct sii9234_platform_data *pdata = client->dev.platform_data;
 	if (!pdata)
 		return -EINVAL;
+
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+	pdata->udelay = 3;	/* 3 us = 1/3 MHz = 333kHz */
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
 
 	pdata->cbus_client = client;
 	return 0;
@@ -4289,6 +5091,12 @@ static struct i2c_driver sii9234_cbus_i2c_driver = {
 static int __init sii9234_init(void)
 {
 	int ret;
+
+// [START] HELIXTECH: KT_SPIDER_FEATURE ====================================
+#ifdef CONFIG_SPIDER_MHL
+	pr_info("spider: version %s\n", SPIDERMHL_VERSION);
+#endif	/* CONFIG_SPIDER_MHL */
+// [END] HELIXTECH: KT_SPIDER_FEATURE ======================================
 
 	ret = i2c_add_driver(&sii9234_mhl_tx_i2c_driver);
 	if (ret < 0)

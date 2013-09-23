@@ -575,6 +575,11 @@ static int rmnet_usb_probe(struct usb_interface *iface,
 	/* allow modem to wake up suspended system */
 	device_set_wakeup_enable(&udev->dev, 1);
 out:
+#ifdef CONFIG_MDM_HSIC_PM
+	/* make reset or dump at 2nd enumeration fail */
+	if (status < 0)
+		mdm_force_fatal();
+#endif
 	return status;
 }
 
@@ -626,6 +631,7 @@ static const struct driver_info rmnet_info_pid9034 = {
 
 static const struct driver_info rmnet_info_pid9048 = {
 	.description   = "RmNET net device",
+	.flags		= FLAG_SEND_ZLP,
 	.bind          = rmnet_usb_bind,
 	.tx_fixup      = rmnet_usb_tx_fixup,
 	.rx_fixup      = rmnet_usb_rx_fixup,
@@ -635,6 +641,7 @@ static const struct driver_info rmnet_info_pid9048 = {
 
 static const struct driver_info rmnet_info_pid904c = {
 	.description   = "RmNET net device",
+	.flags		= FLAG_SEND_ZLP,
 	.bind          = rmnet_usb_bind,
 	.tx_fixup      = rmnet_usb_tx_fixup,
 	.rx_fixup      = rmnet_usb_rx_fixup,

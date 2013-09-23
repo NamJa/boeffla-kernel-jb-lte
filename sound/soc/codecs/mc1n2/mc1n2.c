@@ -36,6 +36,7 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/tlv.h>
+
 #include "mc1n2.h"
 #include "mc1n2_priv.h"
 
@@ -52,6 +53,10 @@
 #include "mc1n2_cfg_lgt.h"
 #elif defined(CONFIG_MACH_PX)
 #include "mc1n2_cfg_px.h"
+#elif defined(CONFIG_TARGET_LOCALE_NA)
+#include "mcresctrl.h"
+#include "mcdefs.h"
+#include "mc1n2_cfg_SPR.h"
 #else
 #include "mc1n2_cfg.h"
 #endif
@@ -2611,7 +2616,7 @@ static const char *codec_status_control[] = {
 };
 
 static const struct soc_enum path_control_enum[] = {
-        SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(codec_status_control), codec_status_control),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(codec_status_control), codec_status_control),
 };
 
 static const struct snd_kcontrol_new mc1n2_snd_controls[] = {
@@ -2783,15 +2788,18 @@ static int mc1n2_add_controls(struct snd_soc_codec *codec,
 
 	for (i = 0; i < n; i++, controls++) {
 #ifdef ALSA_VER_ANDROID_3_0
-		if ((err = snd_ctl_add((struct snd_card *)codec->card->snd_card,
-					snd_soc_cnew(controls, codec, NULL, NULL))) < 0) {
+
+		err = snd_ctl_add((struct snd_card *)codec->card->snd_card,
+				snd_soc_cnew(controls, codec, NULL, NULL));
+		if (err  < 0)
 			return err;
-		}
 #else
-		if ((err = snd_ctl_add(codec->card,
-				       snd_soc_cnew(controls, codec, NULL))) < 0) {
+
+		err = snd_ctl_add(codec->card,
+				snd_soc_cnew(controls, codec, NULL));
+		if (err  < 0)
 			return err;
-		}
+
 #endif
 	}
 
@@ -3072,19 +3080,31 @@ SND_SOC_DAPM_OUTPUT("DIT2"),
 SND_SOC_DAPM_ADC("ADC", NULL, SND_SOC_NOPM, 0, 0),
 SND_SOC_DAPM_DAC("DAC", NULL, SND_SOC_NOPM, 0, 0),
 
-SND_SOC_DAPM_MIXER("ADCL MIXER", SND_SOC_NOPM, 0, 0, adcl_mix, ARRAY_SIZE(adcl_mix)),
-SND_SOC_DAPM_MIXER("ADCR MIXER", SND_SOC_NOPM, 0, 0, adcr_mix, ARRAY_SIZE(adcr_mix)),
-SND_SOC_DAPM_MIXER("HPL MIXER", SND_SOC_NOPM, 0, 0, hpl_mix, ARRAY_SIZE(hpl_mix)),
-SND_SOC_DAPM_MIXER("HPR MIXER", SND_SOC_NOPM, 0, 0, hpr_mix, ARRAY_SIZE(hpr_mix)),
-SND_SOC_DAPM_MIXER("SPL MIXER", SND_SOC_NOPM, 0, 0, spl_mix, ARRAY_SIZE(spl_mix)),
-SND_SOC_DAPM_MIXER("SPR MIXER", SND_SOC_NOPM, 0, 0, spr_mix, ARRAY_SIZE(spr_mix)),
-SND_SOC_DAPM_MIXER("RC MIXER", SND_SOC_NOPM, 0, 0, rc_mix, ARRAY_SIZE(rc_mix)),
-SND_SOC_DAPM_MIXER("LINEOUT1L MIXER", SND_SOC_NOPM, 0, 0, lout1l_mix, ARRAY_SIZE(lout1l_mix)),
-SND_SOC_DAPM_MIXER("LINEOUT1R MIXER", SND_SOC_NOPM, 0, 0, lout1r_mix, ARRAY_SIZE(lout1r_mix)),
-SND_SOC_DAPM_MIXER("LINEOUT2L MIXER", SND_SOC_NOPM, 0, 0, lout2l_mix, ARRAY_SIZE(lout2l_mix)),
-SND_SOC_DAPM_MIXER("LINEOUT2R MIXER", SND_SOC_NOPM, 0, 0, lout2r_mix, ARRAY_SIZE(lout2r_mix)),
+SND_SOC_DAPM_MIXER("ADCL MIXER", SND_SOC_NOPM, 0, 0,\
+		adcl_mix, ARRAY_SIZE(adcl_mix)),
+SND_SOC_DAPM_MIXER("ADCR MIXER", SND_SOC_NOPM, 0, 0,\
+		adcr_mix, ARRAY_SIZE(adcr_mix)),
+SND_SOC_DAPM_MIXER("HPL MIXER", SND_SOC_NOPM, 0, 0,\
+		hpl_mix, ARRAY_SIZE(hpl_mix)),
+SND_SOC_DAPM_MIXER("HPR MIXER", SND_SOC_NOPM, 0, 0,\
+		hpr_mix, ARRAY_SIZE(hpr_mix)),
+SND_SOC_DAPM_MIXER("SPL MIXER", SND_SOC_NOPM, 0, 0,\
+		spl_mix, ARRAY_SIZE(spl_mix)),
+SND_SOC_DAPM_MIXER("SPR MIXER", SND_SOC_NOPM, 0, 0,\
+		spr_mix, ARRAY_SIZE(spr_mix)),
+SND_SOC_DAPM_MIXER("RC MIXER", SND_SOC_NOPM, 0, 0,\
+		rc_mix, ARRAY_SIZE(rc_mix)),
+SND_SOC_DAPM_MIXER("LINEOUT1L MIXER", SND_SOC_NOPM, 0, 0,\
+		lout1l_mix, ARRAY_SIZE(lout1l_mix)),
+SND_SOC_DAPM_MIXER("LINEOUT1R MIXER", SND_SOC_NOPM, 0, 0,\
+		lout1r_mix, ARRAY_SIZE(lout1r_mix)),
+SND_SOC_DAPM_MIXER("LINEOUT2L MIXER", SND_SOC_NOPM, 0, 0,\
+		lout2l_mix, ARRAY_SIZE(lout2l_mix)),
+SND_SOC_DAPM_MIXER("LINEOUT2R MIXER", SND_SOC_NOPM, 0, 0,\
+		lout2r_mix, ARRAY_SIZE(lout2r_mix)),
 
-SND_SOC_DAPM_MIXER("DIGITAL MIXER", SND_SOC_NOPM, 0, 0, digital_mix, ARRAY_SIZE(digital_mix)),
+SND_SOC_DAPM_MIXER("DIGITAL MIXER", SND_SOC_NOPM, 0, 0,\
+		digital_mix, ARRAY_SIZE(digital_mix)),
 
 SND_SOC_DAPM_MUX("DACMAIN SRC", SND_SOC_NOPM, 0, 0, &dacmain_mux),
 SND_SOC_DAPM_MUX("DACVOICE SRC", SND_SOC_NOPM, 0, 0, &dacvoice_mux),
@@ -3613,9 +3633,8 @@ static int mc1n2_hwdep_ioctl_get_ctrl(struct snd_soc_codec *codec,
 
 	err = _McDrv_Ctrl(args->dCmd, info, args->dPrm);
 	err = mc1n2_hwdep_map_error(err);
-	if (err < 0) {
+	if (err < 0)
 		goto error;
-	}
 
 	if (func->callback) {                   /* call post-process */
 		func->callback(codec, info, args->dPrm);
@@ -3638,17 +3657,15 @@ static int mc1n2_hwdep_ioctl_set_ctrl(struct snd_soc_codec *codec,
 	void *info;
 	int err;
 
-	if (func->cmd != MC1N2_IOCTL_NR_SET) {
+	if (func->cmd != MC1N2_IOCTL_NR_SET)
 		return -EINVAL;
-	}
 
-	if (!access_ok(VERIFY_READ, args->pvPrm, func->size)) {
+	if (!access_ok(VERIFY_READ, args->pvPrm, func->size))
 		return -EFAULT;
-	}
 
-	if (!(info = kzalloc(func->size, GFP_KERNEL))) {
+	info = kzalloc(func->size, GFP_KERNEL);
+	if (!info)
 		return -ENOMEM;
-	}
 
 	if (copy_from_user(info, args->pvPrm, func->size) != 0) {
 		kfree(info);
@@ -3661,16 +3678,31 @@ static int mc1n2_hwdep_ioctl_set_ctrl(struct snd_soc_codec *codec,
 
 	if (args->dCmd == MCDRV_SET_DIGITALIO) {
 #ifdef DIO0_DAI_ENABLE
-		args->dPrm &= ~(MCDRV_DIO0_COM_UPDATE_FLAG | MCDRV_DIO0_DIR_UPDATE_FLAG | MCDRV_DIO0_DIT_UPDATE_FLAG);
+		args->dPrm &= ~(MCDRV_DIO0_COM_UPDATE_FLAG \
+				| MCDRV_DIO0_DIR_UPDATE_FLAG \
+				| MCDRV_DIO0_DIT_UPDATE_FLAG);
 #endif
 #ifdef DIO1_DAI_ENABLE
-		args->dPrm &= ~(MCDRV_DIO1_COM_UPDATE_FLAG | MCDRV_DIO1_DIR_UPDATE_FLAG | MCDRV_DIO1_DIT_UPDATE_FLAG);
+		args->dPrm &= ~(MCDRV_DIO1_COM_UPDATE_FLAG \
+				| MCDRV_DIO1_DIR_UPDATE_FLAG \
+				| MCDRV_DIO1_DIT_UPDATE_FLAG);
 #endif
 #ifdef DIO2_DAI_ENABLE
-		args->dPrm &= ~(MCDRV_DIO2_COM_UPDATE_FLAG | MCDRV_DIO2_DIR_UPDATE_FLAG | MCDRV_DIO2_DIT_UPDATE_FLAG);
+		args->dPrm &= ~(MCDRV_DIO2_COM_UPDATE_FLAG \
+				| MCDRV_DIO2_DIR_UPDATE_FLAG \
+				| MCDRV_DIO2_DIT_UPDATE_FLAG);
 #endif
 	}
+#ifdef CONFIG_TARGET_LOCALE_NA
+	if (args->dCmd == MCDRV_SET_AUDIOENGINE) {
+		MCDRV_AE_INFO	sAeInfo;
+		UINT8	bReg;
 
+		McResCtrl_GetAeInfo(&sAeInfo);
+		bReg = McResCtrl_GetRegVal(MCDRV_PACKET_REGTYPE_A,
+						MCI_BDSP_ST);
+	}
+#endif
 	err = _McDrv_Ctrl(args->dCmd, info, args->dPrm);
 
 	kfree(info);
@@ -3684,26 +3716,21 @@ static int mc1n2_hwdep_ioctl_read_reg(struct mc1n2_ctrl_args *args)
 	MCDRV_REG_INFO info;
 	int err;
 
-	if (func->cmd != MC1N2_IOCTL_NR_BOTH) {
+	if (func->cmd != MC1N2_IOCTL_NR_BOTH)
 		return -EINVAL;
-	}
 
-	if (!access_ok(VERIFY_WRITE, args->pvPrm, sizeof(MCDRV_REG_INFO))) {
+	if (!access_ok(VERIFY_WRITE, args->pvPrm, sizeof(MCDRV_REG_INFO)))
 		return -EFAULT;
-	}
 
-	if (copy_from_user(&info, args->pvPrm, sizeof(MCDRV_REG_INFO)) != 0) {
+	if (copy_from_user(&info, args->pvPrm, sizeof(MCDRV_REG_INFO)) != 0)
 		return -EFAULT;
-	}
 
 	err = _McDrv_Ctrl(args->dCmd, &info, args->dPrm);
-	if (err != MCDRV_SUCCESS) {
+	if (err != MCDRV_SUCCESS)
 		return mc1n2_hwdep_map_error(err);
-	}
 
-	if (copy_to_user(args->pvPrm, &info, sizeof(MCDRV_REG_INFO)) != 0) {
+	if (copy_to_user(args->pvPrm, &info, sizeof(MCDRV_REG_INFO)) != 0)
 		return -EFAULT;
-	}
 
 	return 0;
 }
@@ -3777,13 +3804,20 @@ static int mc1n2_hwdep_ioctl_notify(struct snd_soc_codec *codec,
 		if (mc1n2->hdmicount != 0) {
 			if (mc1n2->hdmicount == 1) {
 				memset(&path, 0, sizeof(path));
-				path.asDit0[0].abSrcOnOff[3] = MCDRV_SRC3_DIR0_OFF;
-				path.asDit1[0].abSrcOnOff[3] = MCDRV_SRC3_DIR0_OFF;
-				path.asDit2[0].abSrcOnOff[3] = MCDRV_SRC3_DIR0_OFF;
-				path.asDac[0].abSrcOnOff[3] = MCDRV_SRC3_DIR0_OFF;
-				path.asDac[1].abSrcOnOff[3] = MCDRV_SRC3_DIR0_OFF;
-				path.asAe[0].abSrcOnOff[3] = MCDRV_SRC3_DIR0_OFF;
-				path.asMix[0].abSrcOnOff[3] = MCDRV_SRC3_DIR0_OFF;
+				path.asDit0[0].abSrcOnOff[3]
+					= MCDRV_SRC3_DIR0_OFF;
+				path.asDit1[0].abSrcOnOff[3]
+					= MCDRV_SRC3_DIR0_OFF;
+				path.asDit2[0].abSrcOnOff[3]
+					= MCDRV_SRC3_DIR0_OFF;
+				path.asDac[0].abSrcOnOff[3]
+					= MCDRV_SRC3_DIR0_OFF;
+				path.asDac[1].abSrcOnOff[3]
+					= MCDRV_SRC3_DIR0_OFF;
+				path.asAe[0].abSrcOnOff[3]
+					= MCDRV_SRC3_DIR0_OFF;
+				path.asMix[0].abSrcOnOff[3]
+					= MCDRV_SRC3_DIR0_OFF;
 				_McDrv_Ctrl(MCDRV_SET_PATH, &path, 0);
 			}
 
@@ -3805,12 +3839,16 @@ static int mc1n2_hwdep_ioctl_notify(struct snd_soc_codec *codec,
 
 			/* store parameters */
 			for (i = 0; i < MC1N2_N_INFO_STORE; i++) {
-				struct mc1n2_info_store *store = &mc1n2_info_store_tbl[i];
+				struct mc1n2_info_store *store =
+						&mc1n2_info_store_tbl[i];
 				if (store->get) {
-					err = _McDrv_Ctrl(store->get, (void *)mc1n2 + store->offset, 0);
+					err = _McDrv_Ctrl(store->get,
+						(void *)mc1n2
+						+ store->offset, 0);
 					if (err != MCDRV_SUCCESS) {
 						dev_err(codec->dev,
-							"%d: Error in MCDRV_GET_xxx\n", err);
+							"%d: Error in\
+							MCDRV_GET_xxx\n", err);
 						err = -EIO;
 						goto error_recover;
 					} else {
@@ -3821,7 +3859,8 @@ static int mc1n2_hwdep_ioctl_notify(struct snd_soc_codec *codec,
 
 			err = _McDrv_Ctrl(MCDRV_TERM, NULL, 0);
 			if (err != MCDRV_SUCCESS) {
-				dev_err(codec->dev, "%d: Error in MCDRV_TERM\n", err);
+				dev_err(codec->dev, "%d: Error in\
+					MCDRV_TERM\n", err);
 				err = -EIO;
 			} else {
 				err = 0;
@@ -3829,7 +3868,8 @@ static int mc1n2_hwdep_ioctl_notify(struct snd_soc_codec *codec,
 
 			err = _McDrv_Ctrl(MCDRV_INIT, &mc1n2->setup.init, 0);
 			if (err != MCDRV_SUCCESS) {
-				dev_err(codec->dev, "%d: Error in MCDRV_INIT\n", err);
+				dev_err(codec->dev, "%d: Error in\
+						MCDRV_INIT\n", err);
 				err = -EIO;
 				goto error_recover;
 			} else {
@@ -3837,18 +3877,22 @@ static int mc1n2_hwdep_ioctl_notify(struct snd_soc_codec *codec,
 			}
 
 			/* restore parameters */
-			for (i = 0; i < sizeof(MCDRV_VOL_INFO)/sizeof(SINT16); i++, vol++) {
+			for (i = 0; i < sizeof(MCDRV_VOL_INFO)/sizeof(SINT16);
+						 i++, vol++) {
 				*vol |= 0x0001;
 			}
 
 			for (i = 0; i < MC1N2_N_INFO_STORE; i++) {
-				struct mc1n2_info_store *store = &mc1n2_info_store_tbl[i];
+				struct mc1n2_info_store *store =
+						&mc1n2_info_store_tbl[i];
 				if (store->set) {
-					err = _McDrv_Ctrl(store->set, (void *)mc1n2 + store->offset,
+					err = _McDrv_Ctrl(store->set,
+						(void *)mc1n2 + store->offset,
 							  store->flags);
 					if (err != MCDRV_SUCCESS) {
 						dev_err(codec->dev,
-							"%d: Error in MCDRV_SET_xxx\n", err);
+						"%d: Error in\
+							MCDRV_SET_xxx\n", err);
 						err = -EIO;
 						goto error_recover;
 					} else {
@@ -3884,13 +3928,11 @@ static int mc1n2_hwdep_ioctl(struct snd_hwdep *hw, struct file *file,
 		return -EFAULT;
 	}
 
-	if (cmd == MC1N2_IOCTL_NOTIFY) {
+	if (cmd == MC1N2_IOCTL_NOTIFY)
 		return mc1n2_hwdep_ioctl_notify(codec, &ctrl_args);
-	}
 
-	if (ctrl_args.dCmd >= MC1N2_HWDEP_N_FUNC_MAP) {
+	if (ctrl_args.dCmd >= MC1N2_HWDEP_N_FUNC_MAP)
 		return -EINVAL;
-	}
 
 	switch (cmd) {
 	case MC1N2_IOCTL_GET_CTRL:
@@ -3925,9 +3967,8 @@ static int mc1n2_add_hwdep(struct snd_soc_codec *codec)
 #else
 	err = snd_hwdep_new(codec->card, MC1N2_HWDEP_ID, 0, &hw);
 #endif
-	if (err < 0) {
+	if (err < 0)
 		return err;
-	}
 
 	hw->iface = SNDRV_HWDEP_IFACE_MC1N2;
 	hw->private_data = codec;
@@ -4036,18 +4077,22 @@ static int mc1n2_probe(struct platform_device *pdev)
 #endif
 
 #ifndef DIO0_DAI_ENABLE
-	update |= (MCDRV_DIO0_COM_UPDATE_FLAG | MCDRV_DIO0_DIR_UPDATE_FLAG | MCDRV_DIO0_DIT_UPDATE_FLAG);
+	update |= (MCDRV_DIO0_COM_UPDATE_FLAG | MCDRV_DIO0_DIR_UPDATE_FLAG \
+				| MCDRV_DIO0_DIT_UPDATE_FLAG);
 #endif
 
 #ifndef DIO1_DAI_ENABLE
-	update |= (MCDRV_DIO1_COM_UPDATE_FLAG | MCDRV_DIO1_DIR_UPDATE_FLAG | MCDRV_DIO1_DIT_UPDATE_FLAG);
+	update |= (MCDRV_DIO1_COM_UPDATE_FLAG | MCDRV_DIO1_DIR_UPDATE_FLAG \
+				| MCDRV_DIO1_DIT_UPDATE_FLAG);
 #endif
 
 #ifndef DIO2_DAI_ENABLE
-	update |= (MCDRV_DIO2_COM_UPDATE_FLAG | MCDRV_DIO2_DIR_UPDATE_FLAG | MCDRV_DIO2_DIT_UPDATE_FLAG);
+	update |= (MCDRV_DIO2_COM_UPDATE_FLAG | MCDRV_DIO2_DIR_UPDATE_FLAG \
+				| MCDRV_DIO2_DIT_UPDATE_FLAG);
 #endif
 
-	err = _McDrv_Ctrl(MCDRV_SET_DIGITALIO, (void *)&stDioInfo_Default, update);
+	err = _McDrv_Ctrl(MCDRV_SET_DIGITALIO,
+			(void *)&stDioInfo_Default, update);
 	if (err < 0) {
 		dev_err(dev, "%d: Error in MCDRV_SET_DIGITALIO\n", err);
 		goto error_set_mode;
@@ -4078,7 +4123,8 @@ static int mc1n2_probe(struct platform_device *pdev)
 	}
 
 	if (mc1n2_hwid == MC1N2_HW_ID_AB) {
-		err = _McDrv_Ctrl(MCDRV_SET_SYSEQ, (void *)&stSyseqInfo_Default, 0x3);
+		err = _McDrv_Ctrl(MCDRV_SET_SYSEQ,
+				(void *)&stSyseqInfo_Default, 0x3);
 
 		if (err < 0) {
 			dev_err(dev, "%d: Error in MCDRV_SET_SYSEQ\n", err);
@@ -4184,7 +4230,8 @@ static int mc1n2_suspend(struct platform_device *pdev, pm_message_t state)
 	for (i = 0; i < MC1N2_N_INFO_STORE; i++) {
 		struct mc1n2_info_store *store = &mc1n2_info_store_tbl[i];
 		if (store->get) {
-			err = _McDrv_Ctrl(store->get, (void *)mc1n2 + store->offset, 0);
+			err = _McDrv_Ctrl(store->get,
+					(void *)mc1n2 + store->offset, 0);
 			if (err != MCDRV_SUCCESS) {
 				dev_err(codec->dev,
 					"%d: Error in mc1n2_suspend\n", err);
@@ -4197,7 +4244,7 @@ static int mc1n2_suspend(struct platform_device *pdev, pm_message_t state)
 	}
 
 	/* Do not enter suspend mode for voice call */
-	if(mc1n2_current_mode != MC1N2_MODE_IDLE) {
+	if (mc1n2_current_mode != MC1N2_MODE_IDLE) {
 		err = 0;
 		goto error;
 	}
@@ -4260,15 +4307,15 @@ static int mc1n2_resume(struct platform_device *pdev)
 	}
 
 	/* restore parameters */
-	for (i = 0; i < sizeof(MCDRV_VOL_INFO)/sizeof(SINT16); i++, vol++) {
+	for (i = 0; i < sizeof(MCDRV_VOL_INFO)/sizeof(SINT16); i++, vol++)
 		*vol |= 0x0001;
-	}
 
 	for (i = 0; i < MC1N2_N_INFO_STORE; i++) {
 		struct mc1n2_info_store *store = &mc1n2_info_store_tbl[i];
 		if (store->set) {
-			err = _McDrv_Ctrl(store->set, (void *)mc1n2 + store->offset,
-					  store->flags);
+			err = _McDrv_Ctrl(store->set,
+				(void *)mc1n2 + store->offset, store->flags);
+
 			if (err != MCDRV_SUCCESS) {
 				dev_err(codec->dev,
 					"%d: Error in mc1n2_resume\n", err);
@@ -4311,13 +4358,14 @@ EXPORT_SYMBOL_GPL(soc_codec_dev_mc1n2);
 /*
  * I2C client
  */
-static int mc1n2_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
+static int mc1n2_i2c_detect(struct i2c_client *client,
+				struct i2c_board_info *info)
 {
 	UINT8	bHwid = mc1n2_i2c_read_byte(client, 8);
 
-	if (bHwid != MC1N2_HW_ID_AB && bHwid != MC1N2_HW_ID_AA) {
+	if (bHwid != MC1N2_HW_ID_AB && bHwid != MC1N2_HW_ID_AA)
 		return -ENODEV;
-	}
+
 	mc1n2_hwid = bHwid;
 
 	return 0;
@@ -4333,16 +4381,18 @@ static int mc1n2_i2c_probe(struct i2c_client *client,
 	TRACE_FUNC();
 
 	/* setup codec data */
-	if (!(codec = kzalloc(sizeof(struct snd_soc_codec), GFP_KERNEL))) {
+	codec = kzalloc(sizeof(struct snd_soc_codec), GFP_KERNEL);
+	if (!codec) {
 		err = -ENOMEM;
 		goto err_alloc_codec;
 	}
 	codec->name = MC1N2_NAME;
-//	codec->owner = THIS_MODULE;
+/*	codec->owner = THIS_MODULE;*/
 	mutex_init(&codec->mutex);
 	codec->dev = &client->dev;
 
-	if (!(mc1n2 = kzalloc(sizeof(struct mc1n2_data), GFP_KERNEL))) {
+	mc1n2 = kzalloc(sizeof(struct mc1n2_data), GFP_KERNEL);
+	if (!mc1n2) {
 		err = -ENOMEM;
 		goto err_alloc_data;
 	}
@@ -4363,10 +4413,9 @@ static int mc1n2_i2c_probe(struct i2c_client *client,
 		goto err_i2c;
 	}
 
-	if ((err = mc1n2_i2c_detect(client, NULL)) < 0) {
+	err = mc1n2_i2c_detect(client, NULL);
+	if (err < 0)
 		goto err_i2c;
-	}
-
 
 #ifdef ALSA_VER_ANDROID_3_0
 	i2c_set_clientdata(client, mc1n2);
@@ -4393,24 +4442,24 @@ static int mc1n2_i2c_probe(struct i2c_client *client,
 #endif
 
 #ifdef ALSA_VER_ANDROID_3_0
-	if ((err = snd_soc_register_codec(&client->dev, &soc_codec_dev_mc1n2,
-									  mc1n2_dai, ARRAY_SIZE(mc1n2_dai))) < 0) {
+	err = snd_soc_register_codec(&client->dev, &soc_codec_dev_mc1n2,
+				  mc1n2_dai, ARRAY_SIZE(mc1n2_dai));
+	if (err < 0)
 		goto err_reg_codec;
-	}
 
 	mc1n2_i2c = client;
 #else
-	if ((err = snd_soc_register_codec(codec)) < 0) {
+	err = snd_soc_register_codec(codec);
+	if (err < 0)
 		goto err_reg_codec;
-	}
 
 	/* setup DAI data */
-	for (i = 0; i < ARRAY_SIZE(mc1n2_dai); i++) {
+	for (i = 0; i < ARRAY_SIZE(mc1n2_dai); i++)
 		mc1n2_dai[i].dev = &client->dev;
-	}
-        if ((err = snd_soc_register_dais(mc1n2_dai, ARRAY_SIZE(mc1n2_dai))) < 0) {
+
+	err = snd_soc_register_dais(mc1n2_dai, ARRAY_SIZE(mc1n2_dai));
+	if (err < 0)
 		goto err_reg_dai;
-	}
 #endif
 
 	return 0;
@@ -4444,7 +4493,7 @@ static int mc1n2_i2c_remove(struct i2c_client *client)
 	TRACE_FUNC();
 
 #ifdef ALSA_VER_ANDROID_3_0
-	mc1n2 = (struct mc1n2_data*)(i2c_get_clientdata(client));
+	mc1n2 = (struct mc1n2_data *)(i2c_get_clientdata(client));
 	mutex_destroy(&mc1n2->mutex);
 	snd_soc_unregister_codec(&client->dev);
 #else

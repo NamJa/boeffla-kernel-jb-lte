@@ -624,7 +624,12 @@ static void if_usb_disconnect(struct usb_interface *intf)
 		cancel_delayed_work_sync(&usb_ld->ld.tx_delayed_work);
 		usb_put_dev(usbdev);
 		usb_ld->usbdev = NULL;
-		pm_runtime_forbid(pm_data->root_hub);
+		if (!has_hub(usb_ld)) {
+			if (pm_data->root_hub)
+				pm_runtime_forbid(pm_data->root_hub);
+			schedule_delayed_work(&usb_ld->wait_enumeration,
+					WAIT_ENUMURATION_TIMEOUT_JIFFIES);
+		}
 	}
 }
 

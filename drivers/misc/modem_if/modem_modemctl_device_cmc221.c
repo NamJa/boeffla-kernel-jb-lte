@@ -94,6 +94,52 @@ static irqreturn_t dynamic_switching_handler(int irq, void *arg)
 	return IRQ_HANDLED;
 }
 
+#ifdef CONFIG_EXYNOS4_CPUFREQ /* Set cpu clock to 800MHz for high TP */
+static void cmc221_cpufreq_lock(struct work_struct *work)
+{
+	struct modem_ctl *mc;
+
+	mc = container_of(work, struct modem_ctl, work_cpu_lock.work);
+	if (mc->mdm_data->link_pm_data->freq_lock) {
+		mif_debug("Call freq lock func.\n");
+		mc->mdm_data->link_pm_data->freq_lock(mc->dev);
+
+		cancel_delayed_work(&mc->work_cpu_unlock);
+		schedule_delayed_work(&mc->work_cpu_unlock, 
+					msecs_to_jiffies(5000));
+	}
+}
+
+static void cmc221_cpufreq_unlock(struct work_struct *work)
+{
+	struct modem_ctl *mc;
+	int tp_level;
+
+	mc = container_of(work, struct modem_ctl, work_cpu_unlock.work);
+	tp_level = gpio_get_value(mc->gpio_cpufreq_lock);
+
+	mif_debug("TP Level is (%d)\n", tp_level);
+	if (tp_level) {
+		mif_debug("maintain cpufreq lock !!!\n");
+		schedule_delayed_work(&mc->work_cpu_unlock, 
+					msecs_to_jiffies(5000));
+	} else {
+		if (mc->mdm_data->link_pm_data->freq_unlock) {
+			mif_debug("Call freq unlock func.\n");
+			mc->mdm_data->link_pm_data->freq_unlock(mc->dev);
+		}
+	}
+}
+
+static irqreturn_t cpufreq_lock_handler(int irq, void *arg)
+{
+	struct modem_ctl *mc = (struct modem_ctl *)arg;
+
+	schedule_delayed_work(&mc->work_cpu_lock, 0);
+	return IRQ_HANDLED;
+}
+#endif
+
 static int cmc221_on(struct modem_ctl *mc)
 {
 	struct link_device *ld = get_current_link(mc->iod);
@@ -264,7 +310,9 @@ int cmc221_init_modemctl_device(struct modem_ctl *mc, struct modem_data *pdata)
 #endif
 	mc->gpio_dynamic_switching = pdata->gpio_dynamic_switching;
 	mc->need_switch_to_usb = false;
-
+#ifdef CONFIG_EXYNOS4_CPUFREQ
+	mc->gpio_cpufreq_lock = pdata->gpio_cpufreq_lock;
+#endif
 	if (!mc->gpio_cp_on || !mc->gpio_cp_reset || !mc->gpio_phone_active) {
 		mif_err("%s: ERR! no GPIO data\n", mc->name);
 		return -ENXIO;
@@ -277,7 +325,7 @@ int cmc221_init_modemctl_device(struct modem_ctl *mc, struct modem_data *pdata)
 	dev_set_drvdata(mc->dev, mc);
 
 	pdev = to_platform_device(mc->dev);
-	mc->irq_phone_active = platform_get_irq_byname(pdev, "cp_active_irq");
+	mc->irq_phone_active = platform_get_irq_byname(pdev, STR_CP_ACTIVE_IRQ);
 	if (!mc->irq_phone_active) {
 		mif_err("%s: ERR! get cp_active_irq fail\n", mc->name);
 		return -1;
@@ -312,6 +360,24 @@ int cmc221_init_modemctl_device(struct modem_ctl *mc, struct modem_data *pdata)
 			return ret;
 		}
 	}
+
+#ifdef CONFIG_EXYNOS4_CPUFREQ
+	INIT_DELAYED_WORK(&mc->work_cpu_lock, cmc221_cpufreq_lock);
+	INIT_DELAYED_WORK(&mc->work_cpu_unlock, cmc221_cpufreq_unlock);
+
+	flag = IRQF_TRIGGER_RISING;
+	if (mc->gpio_cpufreq_lock) {
+		irq = gpio_to_irq(mc->gpio_cpufreq_lock);
+		mif_err("%s: CPUFREQ_LOCK_CNT IRQ# = %d\n", mc->name, irq);
+		ret = request_irq(irq, cpufreq_lock_handler, flag,
+				"cpufreq_lock", mc);
+		if (ret) {
+			mif_err("%s: ERR! request_irq(#%d) fail (err %d)\n",
+				mc->name, irq, ret);
+			return ret;
+		}
+	}
+#endif
 
 	return 0;
 }

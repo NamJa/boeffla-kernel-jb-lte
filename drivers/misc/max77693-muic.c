@@ -155,6 +155,7 @@ struct max77693_muic_info {
 
 #if defined(CONFIG_MACH_GC1)
 	bool			is_otg_attach_blocked;
+	bool			is_otg_test;
 #endif /* CONFIG_MACH_GC1 */
 
 #if !defined(CONFIG_MUIC_MAX77693_SUPPORT_CAR_DOCK)
@@ -497,6 +498,74 @@ static ssize_t max77693_muic_show_manualsw(struct device *dev,
 	return sprintf(buf, "UNKNOWN\n");
 }
 
+#if defined(CONFIG_SWITCH_USB_PATH_AUTO)
+/*
+When execute the 'DUN' function. the USB path is switched automatically
+without reconnecting the USB
+*/
+static int max77693_muic_set_usb_path(struct max77693_muic_info *info, int path);
+static ssize_t max77693_muic_set_manualsw(struct device *dev,
+					  struct device_attribute *attr,
+					  const char *buf, size_t count)
+{
+	struct max77693_muic_info *info = dev_get_drvdata(dev);
+	struct max77693_muic_data *mdata = info->muic_data;
+
+	dev_info(info->dev, "func:%s buf:%s,count:%d\n", __func__, buf, count);
+
+	if (!strncasecmp(buf, "PDA", 3)) {
+		info->muic_data->sw_path = AP_USB_MODE;
+
+		if (mdata->usb_cb)
+				mdata->usb_cb(USB_CABLE_ATTACHED);
+#if defined(CONFIG_MACH_M0_CTC) || defined(CONFIG_MACH_T0_CHN_CTC)
+		if (system_rev < 11) {
+			gpio_direction_output(GPIO_USB_BOOT_EN, 0);
+		} else if (system_rev == 11) {
+			gpio_direction_output(GPIO_USB_BOOT_EN, 0);
+			gpio_direction_output(GPIO_USB_BOOT_EN_REV06, 0);
+		} else {
+			gpio_direction_output(GPIO_USB_BOOT_EN_REV06, 0);
+		}
+#endif
+		max77693_muic_set_usb_path(info, AP_USB_MODE);
+		dev_info(info->dev, "%s: AP_USB_MODE\n", __func__);
+	} else if (!strncasecmp(buf, "MODEM", 5)) {
+		info->muic_data->sw_path = CP_USB_MODE;
+
+		if (mdata->usb_cb)
+				mdata->usb_cb(USB_CABLE_DETACHED);
+#if defined(CONFIG_MACH_M0_CTC) || defined(CONFIG_MACH_T0_CHN_CTC)
+		if (system_rev < 11) {
+			gpio_direction_output(GPIO_USB_BOOT_EN, 1);
+		} else if (system_rev == 11) {
+			gpio_direction_output(GPIO_USB_BOOT_EN, 1);
+			gpio_direction_output(GPIO_USB_BOOT_EN_REV06, 1);
+		} else {
+			gpio_direction_output(GPIO_USB_BOOT_EN_REV06, 1);
+		}
+#endif
+		max77693_muic_set_usb_path(info, CP_USB_MODE);
+
+#if defined(CONFIG_SWITCH_DUAL_MODEM)
+		gpio_set_value(GPIO_USB_SEL, GPIO_LEVEL_LOW);
+		dev_info(info->dev, "%s: MODEM %d\n", __func__,
+			gpio_get_value(GPIO_USB_SEL));
+#endif
+		dev_info(info->dev, "%s: CP_USB_MODE\n", __func__);
+#if defined(CONFIG_SWITCH_DUAL_MODEM)
+	} else if (!strncasecmp(buf, "ESC", 3)) {
+		info->muic_data->sw_path = CP_ESC_USB_MODE;
+		gpio_set_value(GPIO_USB_SEL, GPIO_LEVEL_HIGH);
+		dev_info(info->dev, "%s: ESC %d\n", __func__,
+			gpio_get_value(GPIO_USB_SEL));
+#endif
+	} else
+		dev_warn(info->dev, "%s: Wrong command\n", __func__);
+
+	return count;
+}
+#else
 static ssize_t max77693_muic_set_manualsw(struct device *dev,
 					  struct device_attribute *attr,
 					  const char *buf, size_t count)
@@ -528,6 +597,7 @@ static ssize_t max77693_muic_set_manualsw(struct device *dev,
 
 	return count;
 }
+#endif /*CONFIG_SWITCH_USB_PATH_AUTO*/
 
 static ssize_t max77693_muic_show_adc(struct device *dev,
 				      struct device_attribute *attr, char *buf)
@@ -627,13 +697,19 @@ static ssize_t max77693_muic_set_otg_test(struct device *dev,
 	struct i2c_client *client = info->muic;
 	u8 val;
 
-	dev_info(info->dev, "func:%s buf:%s\n", __func__, buf);
-	if (!strncmp(buf, "0", 1))
+	pr_info("%s:%s buf:%s\n", DEV_NAME, __func__, buf);
+	if (!strncmp(buf, "0", 1)) {
 		val = 0;
-	else if (!strncmp(buf, "1", 1))
+#if defined(CONFIG_MACH_GC1)
+		info->is_otg_test = true;
+#endif /* CONFIG_MACH_GC1 */
+	} else if (!strncmp(buf, "1", 1)) {
 		val = 1;
-	else {
-		dev_warn(info->dev, "%s: Wrong command\n", __func__);
+#if defined(CONFIG_MACH_GC1)
+		info->is_otg_test = false;
+#endif /* CONFIG_MACH_GC1 */
+	} else {
+		pr_warn("%s:%s Wrong command\n", DEV_NAME, __func__);
 		return count;
 	}
 
@@ -1786,13 +1862,13 @@ static void max77693_muic_handle_jig_uart(struct max77693_muic_info *info,
 	}
 }
 
-void max77693_otg_control(struct max77693_muic_info *info, int enable)
+static void max77693_otg_control(struct max77693_muic_info *info, int enable)
 {
 	u8 int_mask, cdetctrl1, chg_cnfg_00;
 #ifdef CONFIG_MACH_GC1
 	u8 mu_adc = max77693_muic_get_status1_adc_value();
 #endif
-	pr_info("%s: enable(%d)\n", __func__, enable);
+	pr_info("%s:%s enable(%d)\n", DEV_NAME, __func__, enable);
 
 	if (enable) {
 		/* disable charger interrupt */
@@ -1809,15 +1885,11 @@ void max77693_otg_control(struct max77693_muic_info *info, int enable)
 		 * drivers not getting recognized in subsequent switches.
 		 * Factory Mode BOOT(on) USB.
 		 */
-
-		/* Wait for the signal debounce time adjustment for 10 ms*/
-		mdelay(10);
-
-		if (mu_adc) {
-			pr_info("%s: JIG USB CABLE adc(0x%x))\n",
+		if (mu_adc && !(info->is_otg_test)) {
+			pr_info("%s:%s JIG USB CABLE adc(0x%x))\n", DEV_NAME,
 					__func__, mu_adc);
-			pr_info(" %s: Enabling charging INT"\
-				"for the Non-OTG casey.\n", __func__);
+			pr_info("%s:%s Enabling charging INT for the "\
+				"Non-OTG case.\n", DEV_NAME, __func__);
 			int_mask &= ~(1 << 6);	/* Enabling Chgin INTR.*/
 		}
 #endif
@@ -1831,9 +1903,9 @@ void max77693_otg_control(struct max77693_muic_info *info, int enable)
 		cdetctrl1 &= ~(1 << 0);
 #ifdef CONFIG_MACH_GC1
 		/* Factory Mode BOOT(on) USB */
-		if (mu_adc) {
-			pr_info("%s: Enabling Charging Detn. for non-OTG\n",
-				__func__);
+		if (mu_adc && !(info->is_otg_test)) {
+			pr_info("%s:%s Enabling Charging Detn. for non-OTG\n",
+				DEV_NAME, __func__);
 			 /*Enabling Charger Detn on Rising VB */
 			cdetctrl1 |= (1 << 0);
 		}
@@ -1882,13 +1954,14 @@ void max77693_otg_control(struct max77693_muic_info *info, int enable)
 			MAX77693_CHG_REG_CHG_INT_MASK, &int_mask);
 	}
 
-	pr_info("%s: INT_MASK(0x%x), CDETCTRL1(0x%x), CHG_CNFG_00(0x%x)\n",
-				__func__, int_mask, cdetctrl1, chg_cnfg_00);
+	pr_info("%s:%s INT_MASK(0x%x), CDETCTRL1(0x%x), CHG_CNFG_00(0x%x)\n",
+			DEV_NAME, __func__, int_mask, cdetctrl1, chg_cnfg_00);
 }
 
-void max77693_powered_otg_control(struct max77693_muic_info *info, int enable)
+static void max77693_powered_otg_control(struct max77693_muic_info *info,
+						int enable)
 {
-	pr_info("%s: enable(%d)\n", __func__, enable);
+	pr_info("%s:%s enable(%d)\n", DEV_NAME, __func__, enable);
 
 	if (enable) {
 		/* OTG on, boost on */
@@ -3264,6 +3337,20 @@ void max77693_update_jig_state(struct max77693_muic_info *info)
 	mdata->jig_state(jig_state);
 }
 
+static struct platform_device *max77693_muic_pdevice;
+
+cable_type_t max77693_muic_get_attached_device(void)
+{
+	struct max77693_muic_info *info =
+		platform_get_drvdata(max77693_muic_pdevice);
+
+	if (info)
+		return info->cable_type;
+
+	return CABLE_TYPE_NONE_MUIC;
+}
+EXPORT_SYMBOL(max77693_muic_get_attached_device);
+
 static int __devinit max77693_muic_probe(struct platform_device *pdev)
 {
 	struct max77693_dev *max77693 = dev_get_drvdata(pdev->dev.parent);
@@ -3296,6 +3383,7 @@ static int __devinit max77693_muic_probe(struct platform_device *pdev)
 	info->is_adc_open_prev = true;
 #if defined(CONFIG_MACH_GC1)
 	info->is_otg_attach_blocked = false;
+	info->is_otg_test = false;
 #endif /* CONFIG_MACH_GC1 */
 #if !defined(CONFIG_MUIC_MAX77693_SUPPORT_CAR_DOCK)
 	info->is_factory_start = false;
@@ -3474,6 +3562,8 @@ static int __devinit max77693_muic_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK(&info->mhl_work, max77693_muic_mhl_detect);
 	schedule_delayed_work(&info->mhl_work, msecs_to_jiffies(25000));
 #endif
+
+    max77693_muic_pdevice = pdev;
 
 	return 0;
 
