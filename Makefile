@@ -370,7 +370,9 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
+           -Wno-maybe-uninitialized \
 		   -fno-delete-null-pointer-checks \
+           -fno-schedule-insns2 \
  		   -marm -march=armv7-a \
 		   -mcpu=cortex-a9 -mtune=cortex-a9 -fno-pic
 KBUILD_AFLAGS_KERNEL :=

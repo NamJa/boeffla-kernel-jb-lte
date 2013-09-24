@@ -1,7 +1,8 @@
 #!/bin/bash
 
 export ARCH=arm
-export CROSS_COMPILE=/home/guni/kernel/arm-eabi-4.7/bin/arm-eabi-
+GOOGLE_TC=/home/guni/kernel/arm-eabi-google-4.7.0/bin/arm-eabi-
+LINARO_TC=/home/guni/kernel/arm-eabi-linaro-4.8.2/bin/arm-eabi-
 
 BOEFFLA_RAMDISK="ramdisk_boeffla"
 RAMDISK_PATH="ramdisk_lte"
@@ -20,7 +21,8 @@ RMV_MODULES=(commkm.ko mvpkm.ko pvtcpkm.ko)
 
 print_error()
 {
-    echo "Usage: $1 telco (e.g., skt, kt, lgt)"
+    echo "Usage: $1 operator toolchain_type"
+    echo "$1 skt/kt/lgt google/linaro"
     exit
 }
 
@@ -30,6 +32,20 @@ check_op()
     then
         retval="false"
     elif [ $1 == "skt" ] || [ $1 == "kt" ] || [ $1 == "lgt" ]
+    then
+        retval="true"
+    else
+        retval="false"
+    fi
+    echo $retval
+}
+
+check_toolchain()
+{
+    if [ ! $1 ]
+    then
+        retval="false"
+    elif [ $1 == "google" ] || [ $1 == "linaro" ]
     then
         retval="true"
     else
@@ -140,11 +156,30 @@ else
     print_error $0
 fi
 
+retval=$( check_toolchain $2 )
+TC="google"                 # assign google toolchain as default toolchain
+if [ "$retval" == "true" ]
+then
+    TC=$2
+else
+    print_error $0
+fi
+
+if [ $TC == "google" ]
+then
+    export CROSS_COMPILE=$GOOGLE_TC
+elif [ $TC == "linaro" ]
+then
+    export CROSS_COMPILE=$LINARO_TC
+fi
+
 DEFCONFIG="c1"$OP"_00_defconfig"
 
 # Start build the kernel using four threads
 make $DEFCONFIG
 make -j4
+
+check_zimage
 
 # Copy all compiled kernel modules into modules directory
 if [ ! -d $MODULES ]
@@ -227,20 +262,20 @@ cd ..
 
 # Move built boot.img into output directory and rename to corresponding op
 
-if [ -d $OUTPUT_PATH ]
+if [ -d $OUTPUT_PATH"/"$TC ]
 then
     echo "Found output directory!"
-    if [ -e $OUTPUT_PATH"/boot_"$OP".img" ]
+    if [ -e $OUTPUT_PATH"/"$TC"/boot_"$OP".img" ]
     then
-        rm -rf $OUTPUT_PATH"/boot_"$OP".img"
+        rm -rf $OUTPUT_PATH"/"$TC"/boot_"$OP".img"
     fi
 
-    if [ -e $OUTPUT_PATH"/boeffla_kernel_"$KERNEL_VERSION"_"$OP".zip" ]
+    if [ -e $OUTPUT_PATH"/"$TC"/boeffla_kernel_"$KERNEL_VERSION"_"$OP".zip" ]
     then
-        rm -rf $OUTPUT_PATH"/boeffla_kernel_"$KERNEL_VERSION"_"$OP".zip"
+        rm -rf $OUTPUT_PATH"/"$TC"/boeffla_kernel_"$KERNEL_VERSION"_"$OP".zip"
     fi
 else
-    mkdir $OUTPUT_PATH
+    mkdir -p $OUTPUT_PATH"/"$TC
 fi
 
 if [ -e $TMP_PATH"/boot.img" ]
@@ -248,15 +283,15 @@ then
     echo
     echo "boot.img created"
     echo "Moving boot.img to output directory..."
-    rm -rf $OUTPUT_PATH"/boot_"$OP".img"
-    mv $TMP_PATH"/boot.img" $OUTPUT_PATH"/boot_"$OP".img"
+    rm -rf $OUTPUT_PATH"/"$TC"/boot_"$OP".img"
+    mv $TMP_PATH"/boot.img" $OUTPUT_PATH"/"$TC"/boot_"$OP".img"
 fi
 
 # Pack boot.img as CWM flashable zip file and move to output directory
 
-`cp $OUTPUT_PATH"/boot_"$OP".img" $CWM_PATH"/boot.img"`
+`cp $OUTPUT_PATH"/"$TC"/boot_"$OP".img" $CWM_PATH"/boot.img"`
 cd $CWM_PATH
-echo `zip -r -9 "../"$OUTPUT_PATH"/boeffla_kernel_"$KERNEL_VERSION"_"$OP".zip" * > /dev/null`
+echo `zip -r -9 "../"$OUTPUT_PATH"/"$TC"/boeffla_kernel_"$KERNEL_VERSION"_"$OP".zip" * > /dev/null`
 cd ..
 
 # Clean all temporary files...
