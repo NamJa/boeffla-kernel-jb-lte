@@ -3629,6 +3629,9 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 #if defined(VSDB) && defined(CUSTOMER_HW4)
 	int interference_mode = 3;
 #endif
+#ifdef AMPDU_VO_ENABLE
+	struct ampdu_tid_control tid;
+#endif
 	dhd->suspend_bcn_li_dtim = CUSTOM_SUSPEND_BCN_LI_DTIM;
 #ifdef PROP_TXSTATUS
 #ifdef PROP_TXSTATUS_VSDB
@@ -4013,6 +4016,17 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 	bcm_mkiovar("bcn_li_bcn", (char *)&bcn_li_bcn, 4, iovbuf, sizeof(iovbuf));
 	dhd_wl_ioctl_cmd(dhd, WLC_SET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0);
 #endif /* ENABLE_BCN_LI_BCN_WAKEUP */
+#ifdef AMPDU_VO_ENABLE
+	tid.tid = 6;
+	tid.enable = TRUE;
+	bcm_mkiovar("ampdu_tid", (char *)&tid, 4, iovbuf, sizeof(iovbuf));
+	dhd_wl_ioctl_cmd(dhd, WLC_SET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0);
+
+	tid.tid = 7;
+	tid.enable = TRUE;
+	bcm_mkiovar("ampdu_tid", (char *)&tid, 4, iovbuf, sizeof(iovbuf));
+	dhd_wl_ioctl_cmd(dhd, WLC_SET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0);
+#endif
 
 	/* query for 'ver' to get version info from firmware */
 	memset(buf, 0, sizeof(buf));
